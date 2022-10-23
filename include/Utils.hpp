@@ -19,14 +19,20 @@ struct Camera {
         }
         Camera(const cv::Mat &_cam) {
             _cam.copyTo(fullMatrix);
-            instrinsic = fullMatrix(cv::Range::all(), cv::Range(0, 3));
+            K = fullMatrix(cv::Range(0, 3), cv::Range(0, 3));
         }
-        cv::Mat instrinsic;
+        cv::Mat K;
         cv::Mat fullMatrix;
         void getFx();
         void getFy();
-        void getCalibMat() {
-            
+        void getCalibMat() {}
+        void printK() {
+            for (int i = 0; i < K.rows; i++) {
+                for (int j=0; j<K.cols;j++) {
+                    std::cout <<  K.at<double>(i, j) << " ";
+                }
+                std::cout <<  "\n" << std::endl;
+            }
         }
         ~Camera() {
         }
@@ -56,8 +62,9 @@ void parseCalibString(std::string string, cv::Mat &cvMat) {
         if (s != " ") {
                 double d;
                 try {
-
                     d = std::stod(s);
+                    matValues.emplace_back(d);
+
                 }
                 catch(std::exception &e) {
                     std::cout << e.what() <<std::endl;
@@ -82,7 +89,7 @@ void getCalibParams(std::string _path, Intrinsics &calib) {
     int _i = 0;
     if (_file.is_open()) {
         for (int i=0; i<2;i++) {
-                cv::Mat cvMat(4, 4, CV_64F);
+                cv::Mat cvMat =  cv::Mat(4, 4, CV_64F);
                 getline(_file, line);
                 parseCalibString(line, cvMat);
                 if (i == 0) {
