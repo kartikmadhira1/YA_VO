@@ -18,7 +18,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(sfm-cpp src/temp.cc)
+add_executable(sfm-cpp src/temp.cc src/Image.cc)
 target_link_libraries(sfm-cpp ${OpenCV_LIBS})
 
 enable_testing()
