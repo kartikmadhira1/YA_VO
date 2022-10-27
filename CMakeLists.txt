@@ -17,9 +17,10 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-
+find_package(jsoncpp REQUIRED)
 add_executable(sfm-cpp src/temp.cc src/Image.cc)
-target_link_libraries(sfm-cpp ${OpenCV_LIBS})
+target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib)
+# get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
 enable_testing()
 
