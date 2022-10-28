@@ -4,9 +4,11 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <ctype.h>
+#include <boost/filesystem.hpp>
 #include "opencv4/opencv2/imgproc/imgproc.hpp"
 #include "opencv4/opencv2/highgui/highgui.hpp"
-#include <ctype.h>
+
 
 
 
@@ -103,3 +105,11 @@ void getCalibParams(std::string _path, Intrinsics &calib) {
         }
 
 }
+
+std::vector<boost::filesystem::path> getFilesInFolder(const std::string &path) {
+    std::vector<boost::filesystem::path> filesInDir;
+    std::copy(boost::filesystem::directory_iterator(path), boost::filesystem::directory_iterator(), std::back_inserter(filesInDir));
+    std::sort(filesInDir.begin(), filesInDir.end());
+    return filesInDir;
+}
+

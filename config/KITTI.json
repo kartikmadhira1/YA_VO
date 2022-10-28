@@ -1,5 +1,5 @@
 {
-    "base_path" : "../dataset/", 
+    "basePath" : "../dataset/", 
     "sequence" : "00", 
-    "camera_type" : "mono" //set to stereo if used
+    "cameraType" : "mono" //set to stereo if used
 }
