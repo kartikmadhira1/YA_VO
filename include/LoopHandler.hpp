@@ -26,7 +26,12 @@ class LoopHandler {
 
         void generatePathTrain();
     public:
+        LoopHandler();
         LoopHandler(const std::string &config);
+        std::string getSeqNo();
+        bool stereoStatus();
+        std::string getLeftImagesPath();
         Image getNextImage();
+        ~LoopHandler();
 };
 

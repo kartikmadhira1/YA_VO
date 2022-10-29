@@ -4,7 +4,7 @@
 
 
 LoopHandler::LoopHandler(const std::string &config) {
-    std::ifstream(config)
+    std::ifstream ifs(config);
     Json::Reader reader;
     Json::Value value;
     reader.parse(ifs, obj);
@@ -44,4 +44,20 @@ void LoopHandler::generatePathTrain() {
             leftPathTrain.push_back(eachLeftPath.string());
         }
     }
+}
+
+
+std::string LoopHandler::getSeqNo() {
+    return seqNo;
+}
+
+bool LoopHandler::stereoStatus() {
+    if (this->isStereo) {
+        return true;
+    }
+    return false;
+}
+
+std::string LoopHandler::getLeftImagesPath() {
+    return leftImagesPath;
 }
