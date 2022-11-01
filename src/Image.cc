@@ -1,6 +1,5 @@
 #include "../include/Image.hpp"
 
-
 /**
  * @brief Construct a new Image:: Image object
  * 

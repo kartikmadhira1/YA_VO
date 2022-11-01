@@ -1,23 +1,24 @@
 #include "../include/LoopHandler.hpp"
 
+LoopHandler::LoopHandler() {
 
-
+}
 
 LoopHandler::LoopHandler(const std::string &config) {
     std::ifstream ifs(config);
     Json::Reader reader;
     Json::Value value;
-    reader.parse(ifs, obj);
-    std::string basePath = obj["basePath"].asString();
-    seqNo = obj["sequence"].asString();
-    std::string camType = obj["cameraType"].asString();
+    reader.parse(ifs, value);
+    std::string basePath = value["basePath"].asString();
+    seqNo = value["sequence"].asString();
+    std::string camType = value["cameraType"].asString();
     if (camType == "mono") {
         isStereo = false;
-        leftImagesPath = basePath + seqNo + "/images_0/";
+        leftImagesPath = basePath + seqNo + "/image_0/";
         // rightImagesPath = basePath + seqNo + "/images_1/";
         rightImagesPath = "";
     } else {
-        rightImagesPath = basePath + seqNo + "/images_1/";
+        rightImagesPath = basePath + seqNo + "/image_1/";
     }
     generatePathTrain();
 }
@@ -25,8 +26,8 @@ LoopHandler::LoopHandler(const std::string &config) {
 
 
 void LoopHandler::generatePathTrain() {
-    std::vector<std::filesystem::path> filesLeft;
-    std::vector<std::filesystem::path> filesRight;
+    std::vector<boost::filesystem::path> filesLeft;
+    std::vector<boost::filesystem::path> filesRight;
     if (isStereo) {
         filesLeft = getFilesInFolder(leftImagesPath);
         for (auto &eachLeftPath : filesLeft) {
@@ -61,3 +62,10 @@ bool LoopHandler::stereoStatus() {
 std::string LoopHandler::getLeftImagesPath() {
     return leftImagesPath;
 }
+
+int LoopHandler::getLeftTrainLength() {
+    return leftPathTrain.size();
+}
+
+
+LoopHandler::~LoopHandler() {}

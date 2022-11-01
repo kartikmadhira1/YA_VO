@@ -21,7 +21,7 @@ find_package(jsoncpp REQUIRED)
 find_package(Boost 1.3 COMPONENTS filesystem) 
 include_directories(${Boost_INCLUDE_DIRS}) 
 
-add_executable(sfm-cpp src/temp.cc src/Image.cc src/LoopHandler.cc include/Utils.hpp)
+add_executable(sfm-cpp src/temp.cc src/Image.cc src/LoopHandler.cc src/Utils.cc)
 target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES})
 # get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -29,7 +29,7 @@ enable_testing()
 
 add_executable(
   UtilsTest
-  tests/UtilsTest.cc
+  tests/UtilsTest.cc src/Utils.cc
 )
 target_link_libraries(
   UtilsTest
@@ -38,11 +38,11 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc
 )
 target_link_libraries(
   LoopHandlerTest
-  GTest::gtest_main ${OpenCV_LIBS} ${Boost_LIBRARIES}
+  GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES}
 )
 
 include(GoogleTest)

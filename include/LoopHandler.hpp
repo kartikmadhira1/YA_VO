@@ -2,7 +2,6 @@
 #include <fstream>
 #include <jsoncpp/json/json.h>
 #include "Image.hpp"
-#include "Utils.hpp"
 
 
 
@@ -32,6 +31,7 @@ class LoopHandler {
         bool stereoStatus();
         std::string getLeftImagesPath();
         Image getNextImage();
+        int getLeftTrainLength();
         ~LoopHandler();
 };
 
