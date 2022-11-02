@@ -21,7 +21,7 @@ find_package(jsoncpp REQUIRED)
 find_package(Boost 1.3 COMPONENTS filesystem) 
 include_directories(${Boost_INCLUDE_DIRS}) 
 
-add_executable(sfm-cpp src/temp.cc src/Image.cc src/LoopHandler.cc src/Utils.cc)
+add_executable(sfm-cpp src/temp.cc src/Image.cc src/LoopHandler.cc src/Utils.cc src/FastDetector.cc)
 target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES})
 # get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
