@@ -14,12 +14,16 @@
 class Image {
 
     public :
-        Image();
+        Image() {
+
+        }
         cv::Mat img;
         cv::Mat rawImage;
         FeatExt _features;
         Image(const cv::Mat &img);
         void unDistort();
-        ~Image();
+        ~Image() {
+            
+        }
         
 };

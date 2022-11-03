@@ -22,7 +22,7 @@ class LoopHandler {
         bool isStereo;
         std::vector<std::string> leftPathTrain;
         std::vector<std::string> rightPathTrain;
-
+        void putPixel(Image img, int x, int y);
         void generatePathTrain();
     public:
         LoopHandler();
