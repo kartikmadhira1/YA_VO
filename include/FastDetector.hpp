@@ -1,4 +1,5 @@
 #include <iostream>
+#include <set>
 #include "Utils.hpp"
 #include "Image.hpp"
 
@@ -27,7 +28,7 @@ class FastDetector {
             minDetectionThreshold=12;
             bresRadius=3;
         }
-        void putPixel(Image &img, int x, int y);
+        void putPixel(Image &img, cv::Point pt);
         std::vector<cv::Point2i> getAllSymPoints(int x, int y);
         std::vector<cv::Point2i> getFastFeatures(Image &img);
         std::vector<cv::Point2i> getBresenhamCirclePoints(Image &img, int x, int y);
