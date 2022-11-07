@@ -1,19 +1,31 @@
 #include "../include/FastDetector.hpp"
 
 static bool compFirst(const std::pair<int, int> &pair1, const std::pair<int, int> &pair2) {
-    if (pair1.second <= pair2.second) {
+    if (pair1.second < pair2.second) {
         return true;
-    } else {
-        return false;
+    } 
+    if (pair1.second == pair2.second) {
+        if (pair1.first >= pair2.first) {
+            true;
+        } else {
+            false;
+        }
     }
+    return false;
 }
 
 static bool compSec(const std::pair<int, int> &pair1, const std::pair<int, int> &pair2) {
-    if (pair1.second <= pair2.second) {
+    if (pair1.second > pair2.second) {
         return true;
-    } else {
-        return false;
+    } 
+    if (pair1.second == pair2.second) {
+        if (pair1.first < pair2.first) {
+            true;
+        } else {
+            false;
+        }
     }
+    return false;
 }
 
 // Get all circle points with pixel centered at x, y
@@ -55,48 +67,29 @@ std::vector<cv::Point2i> FastDetector::getBresenhamCirclePoints(Image &img, int 
                 yAct = yc + std::abs(symPoints[i].y);
             }
             if (symPoints[i].x >=0) {
-                std::cout << symPoints[i].x << " > " << symPoints[i].y << std::endl;
-
-                std::cout << xAct << " > " << yAct << std::endl;
+  
                 ordFirstHalf.insert(std::make_pair(xAct, yAct));
             } else {
-                std::cout << symPoints[i].x << " < " << symPoints[i].y << std::endl;
 
-                std::cout << xAct << " < " << yAct << std::endl;
 
                 ordSecHalf.insert(std::make_pair(xAct, yAct));
             }
         }
     }
-    // std::cout << tempCirclePoints.size() << std::endl;
-    // for (auto &eachVal : tempCirclePoints) {
-    //         std::cout << eachVal.x << " " << eachVal.y << std::endl;
-    //         // fd.putPixel(testImage, eachVal.x, eachVal.y);
-    //     }
-    // getOrderedPoints(tempCirclePoints, circlePoints);
-    // circlePoints[0] = cv::Point(xc, yc-bresRadius);
-    // circlePoints[4] = cv::Point(xc-bresRadius, yc);
-    // circlePoints[8] = cv::Point(xc, yc+bresRadius);
-    // circlePoints[12] = cv::Point(xc+bresRadius, yc);
-    // ordFirstHalf.insert(cv::Point(xc, yc-bresRadius));
-    ordFirstHalf.insert(std::make_pair(xc, yc-bresRadius));
-    // ordSecHalf.insert(cv::Point(xc-bresRadius, yc));
-    ordSecHalf.insert(std::make_pair(xc-bresRadius, yc));
-    // ordSecHalf.insert(cv::Point(xc, yc+bresRadius));
-    ordSecHalf.insert(std::make_pair(xc, yc+bresRadius));
 
-    // ordFirstHalf.insert(cv::Point(xc+bresRadius, yc));
-    ordSecHalf.insert(std::make_pair(xc+bresRadius, yc));
+    ordFirstHalf.insert(std::make_pair(xc+bresRadius, yc));
+    ordSecHalf.insert(std::make_pair(xc-bresRadius, yc));
+    
+    circlePoints.push_back(cv::Point(xc, yc-bresRadius));
 
     for (auto &eachVal : ordFirstHalf) {
         circlePoints.push_back(cv::Point(eachVal.first, eachVal.second));
 
     }
-
+    circlePoints.push_back(cv::Point(xc, yc+bresRadius));
     for (auto &eachVal : ordSecHalf) {
         circlePoints.push_back(cv::Point(eachVal.first, eachVal.second));
     }
-    // convert ord set to vector
     return circlePoints;
 }
 
