@@ -62,3 +62,6 @@ void getCalibParams(std::string _path, Intrinsics &calib);
 
 
 std::vector<boost::filesystem::path> getFilesInFolder(const std::string &path);
+
+
+std::string type2str(int type);

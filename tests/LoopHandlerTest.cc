@@ -13,9 +13,22 @@ TEST(LoopHandler, CopyConstructor) {
 }
 
 
-TEST(LoopHandler, pathTrainTest) {
+TEST(LoopHandler, PathTrainTest) {
     std::string configPath = "../config/KITTI_mock_test.json";
     LoopHandler Lh(configPath);
     EXPECT_EQ(Lh.getLeftTrainLength(), 4541);
 
+}
+
+
+
+TEST(LoopHandler, ImageDataType) {
+    std::string configPath = "../config/KITTI_mock_test.json";
+    LoopHandler Lh(configPath);
+    // auto train = Lh.leftPathTrain();
+    cv::Mat testImage = cv::imread( Lh.leftPathTrain[0], -1);
+
+    std::string s = type2str(testImage.type());
+
+    EXPECT_EQ(s, "8UC1");
 }

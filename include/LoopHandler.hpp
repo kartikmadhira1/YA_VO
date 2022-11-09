@@ -20,11 +20,12 @@ class LoopHandler {
         std::string leftImagesPath;
         std::string rightImagesPath;
         bool isStereo;
-        std::vector<std::string> leftPathTrain;
-        std::vector<std::string> rightPathTrain;
+
         void putPixel(Image img, int x, int y);
         void generatePathTrain();
     public:
+        std::vector<std::string> leftPathTrain;
+        std::vector<std::string> rightPathTrain;
         LoopHandler();
         LoopHandler(const std::string &config);
         std::string getSeqNo();

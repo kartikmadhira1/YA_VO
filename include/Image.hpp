@@ -22,6 +22,7 @@ class Image {
         FeatExt _features;
         Image(const cv::Mat &img);
         void unDistort();
+        uint8_t getPixelVal(int i, int j);
         ~Image() {
             
         }
