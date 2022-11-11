@@ -12,15 +12,11 @@ TEST(FastDetector, bresenhamCircleCheck) {
     std::vector<cv::Point2i> bresPoints = fd.getBresenhamCirclePoints(testImage, 25, 25);
     // fd.putPixel(testImage, 25, 25);
     // // std::cout << bresPoints.size() << std::endl;
-    int cnt = 0;
     for (auto &eachVal : bresPoints) {
-        // std::cout << eachVal.x << " " << eachVal.y << std::endl;
         fd.putPixel(testImage, eachVal);
-        // cv::imwrite("test" + std::to_string(cnt) + ".png", testImage.rawImage);
 
-        cnt++;
     }
-    // cv::imwrite("test1.png", testImage.rawImage);
+    // cv::imwrite("test1.png", testImage.rawI/mage);
 
     EXPECT_TRUE(testImage.rawImage.rows == testEQ.rows);
     EXPECT_TRUE(testImage.rawImage.cols== testEQ.cols);
@@ -35,3 +31,5 @@ TEST(FastDetector, bresenhamCircleCheck) {
     EXPECT_TRUE(eqCheck);
 }
 
+
+//

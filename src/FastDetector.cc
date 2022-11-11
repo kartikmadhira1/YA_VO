@@ -31,7 +31,7 @@ static bool compSec(const std::pair<int, int> &pair1, const std::pair<int, int> 
 
 
 // Get all circle points with pixel centered at x, y
-std::vector<cv::Point2i> FastDetector::getBresenhamCirclePoints(Image &img, int xc, int yc) {
+std::vector<cv::Point2i> FastDetector::getBresenhamCirclePoints(const Image &img, int xc, int yc) {
     
     int xLoop = 0;
     int yLoop = bresRadius;
@@ -107,7 +107,7 @@ void FastDetector::putPixel(Image &img, cv::Point pt) {
 
 
 
-std::vector<cv::Point2i> FastDetector::getFastFeatures( Image &img) {
+std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
     // core implementation of the fast features
     // 1. For each pixel in the image
     // 2. Get the bresenham continuos points for the pixel
@@ -120,7 +120,7 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures( Image &img) {
     for (int i=4;i<img.rawImage.rows-4;i++) {
         for(int j=4;j<img.rawImage.cols-4;j++) {
             uint8_t centPixel = img.getPixelVal(i, j);
-            std::vector<cv::Point2i> circlePoints = getBresenhamCirclePoints(img.rawImage, i, j);
+            std::vector<cv::Point2i> circlePoints = getBresenhamCirclePoints(img, i, j);
 
             // Check conditions
             cv::Point2i P1 = circlePoints[0];
@@ -134,13 +134,13 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures( Image &img) {
             uint8_t p13Val = img.getPixelVal(P13.x, P13.y);
             
             // TEST PERFORMANCE USING THIS V/S USING AN INLINE FUNCTION TO CHECK THIS
-            if (checkIntBetween(centPixel, p1Val) && checkIntBetween(centPixel, p8Val)) {
+            if (checkInBetween(centPixel, p1Val) && checkInBetween(centPixel, p8Val)) {
                 continue;
             }
-            if (checkIntBetween(centPixel, p5Val) || checkIntBetween(centPixel, p13Val)) {
+            if (checkInBetween(centPixel, p5Val) || checkInBetween(centPixel, p13Val)) {
                 // check for contiguous 12 pixels 
 
-                if (checkContiguousPixels(centPixel, circlePoints)) {
+                if (checkContiguousPixels(centPixel, circlePoints, img)) {
                     // This is a valid corner
                     retCorners.push_back(cv::Point2i(i, j));
                 }
@@ -156,13 +156,13 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures( Image &img) {
 
 
 
-bool FastDetector::checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point2i> &circlePoints) {
+bool FastDetector::checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point2i> &circlePoints, const Image &img) {
     int currInd = 0;
     int pixCount = 0;
     while (currInd < 16) {
-        if (checkIntBetween(centPixel, circlePoints[currInd])) {
+        if (checkInBetween(centPixel, img.getPixelVal(circlePoints[currInd].x, circlePoints[currInd].x))) {
             pixCount=0;
-            currInd++;
+            currInd++; 
         } else {
             pixCount++;
             currInd++;
@@ -171,9 +171,10 @@ bool FastDetector::checkContiguousPixels(uint8_t centPixel, const std::vector<cv
             return true;
         }
     }
+    return false;
 }
 
-inline bool FastDetector::checkIntBetween(uint8_t centPixel, uint8_t condPixel) {
+inline bool FastDetector::checkInBetween( uint8_t centPixel,  uint8_t condPixel) {
     if ((centPixel > condPixel - intensityThreshold) && (centPixel < condPixel + intensityThreshold)) {return true;}
     return false;
 }

@@ -37,6 +37,16 @@ target_link_libraries(
 )
 
 add_executable(
+  ImageTest
+  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc
+)
+target_link_libraries(
+  ImageTest
+  GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES}
+)
+
+
+add_executable(
   LoopHandlerTest
   tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc
 )
@@ -58,4 +68,4 @@ target_link_libraries(
 
 
 include(GoogleTest)
-gtest_discover_tests(UtilsTest LoopHandlerTest FastDetectorTest)
+gtest_discover_tests(UtilsTest LoopHandlerTest FastDetectorTest ImageTest)

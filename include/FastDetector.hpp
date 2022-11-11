@@ -32,10 +32,10 @@ class FastDetector {
         }
         void putPixel(Image &img, cv::Point pt);
         std::vector<cv::Point2i> getAllSymPoints(int x, int y);
-        std::vector<cv::Point2i> getFastFeatures(Image &img);
-        std::vector<cv::Point2i> getBresenhamCirclePoints(Image &img, int x, int y);
-        bool checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point2i> &circlePoints);
-        inline bool checkIntBetween(uint8_t centPixel, uint8_t condPixel);
+        std::vector<cv::Point2i> getFastFeatures(const Image &img);
+        std::vector<cv::Point2i> getBresenhamCirclePoints(const Image &img, int x, int y);
+        bool checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point2i> &circlePoints, const Image &img);
+        inline bool checkInBetween( uint8_t centPixel, uint8_t condPixel);
         ~FastDetector() {
         }
 };

@@ -12,6 +12,6 @@ Image::Image(const cv::Mat &img) {
    // Undistort image here itself in the constructor
 }
 
-uint8_t Image::getPixelVal(int i, int j) {
+uint8_t Image::getPixelVal(int i, int j) const {
    return this->rawImage.data[i*this->rawImage.cols + j];
 }
