@@ -153,24 +153,12 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
             uint8_t p5Val = img.getPixelVal(P5.x, P5.y);
             uint8_t p13Val = img.getPixelVal(P13.x, P13.y);
             
-            // TEST PERFORMANCE USING THIS V/S USING AN INLINE FUNCTION TO CHECK THIS
-            if (i==25 && j == 25) {
-                std::cout << checkInBetween(centPixel, p1Val) << std::endl;
-                std::cout << checkInBetween(centPixel, p8Val) << std::endl;
-                std::cout << checkInBetween(centPixel, p5Val) << std::endl;
-                std::cout << checkInBetween(centPixel, p13Val) << std::endl;
-                std::cout << checkContiguousPixels(centPixel, circlePoints, img) << std::endl;
-
-
-            }
+            // TEST PERFORMANCE USING THIS V/S USING AN INLINE FUNCTION TO CHECK THIS CONDITION
             if ((!checkInBetween(centPixel, p1Val)) && (!checkInBetween(centPixel, p8Val))) {
 
                 if (!checkInBetween(centPixel, p5Val) || !checkInBetween(centPixel, p13Val)) {
                     // check for contiguous 12 pixels 
-                    if (i==25 && j == 25) {
 
-                    std::cout << "second" << std::endl;
-                    }
                     if (checkContiguousPixels(centPixel, circlePoints, img)) {
                         // This is a valid corner
                         float corScore = getHarrisCornerResponse(img, i, j)
