@@ -101,8 +101,14 @@ std::vector<cv::Point2i> FastDetector::getAllSymPoints(int x, int y) {
 
 void FastDetector::putPixel(Image &img, cv::Point pt) {
 
-    cv::Vec3b *color = new cv::Vec3b(255, 255, 255);
-    img.rawImage.at<cv::Vec3b>(pt) = *color;
+    uint8_t *color = new uint8_t(255);
+    img.rawImage.at<uint8_t>(pt) = *color;
+}
+
+void FastDetector::putPixel(Image &img, cv::Point pt, uint8_t pixVal) {
+
+    uint8_t *color = new uint8_t(pixVal);
+    img.rawImage.at<uint8_t>(pt) = *color;
 }
 
 
@@ -134,23 +140,36 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
             uint8_t p13Val = img.getPixelVal(P13.x, P13.y);
             
             // TEST PERFORMANCE USING THIS V/S USING AN INLINE FUNCTION TO CHECK THIS
-            if (checkInBetween(centPixel, p1Val) && checkInBetween(centPixel, p8Val)) {
-                continue;
+            if (i==25 && j == 25) {
+                std::cout << checkInBetween(centPixel, p1Val) << std::endl;
+                std::cout << checkInBetween(centPixel, p8Val) << std::endl;
+                std::cout << checkInBetween(centPixel, p5Val) << std::endl;
+                std::cout << checkInBetween(centPixel, p13Val) << std::endl;
+                std::cout << checkContiguousPixels(centPixel, circlePoints, img) << std::endl;
+
+
             }
-            if (checkInBetween(centPixel, p5Val) || checkInBetween(centPixel, p13Val)) {
-                // check for contiguous 12 pixels 
+            if ((!checkInBetween(centPixel, p1Val)) && (!checkInBetween(centPixel, p8Val))) {
 
-                if (checkContiguousPixels(centPixel, circlePoints, img)) {
-                    // This is a valid corner
-                    retCorners.push_back(cv::Point2i(i, j));
+                if (!checkInBetween(centPixel, p5Val) || !checkInBetween(centPixel, p13Val)) {
+                    // check for contiguous 12 pixels 
+                    if (i==25 && j == 25) {
+
+                    std::cout << "second" << std::endl;
+                    }
+                    if (checkContiguousPixels(centPixel, circlePoints, img)) {
+                        // This is a valid corner
+                        retCorners.push_back(cv::Point2i(i, j));
+                    }
+
+                } else {
+                    continue;
                 }
-
-            } else {
-                continue;
             }
 
         }
     }
+    return retCorners;
 }
 
 
@@ -160,7 +179,8 @@ bool FastDetector::checkContiguousPixels(uint8_t centPixel, const std::vector<cv
     int currInd = 0;
     int pixCount = 0;
     while (currInd < 16) {
-        if (checkInBetween(centPixel, img.getPixelVal(circlePoints[currInd].x, circlePoints[currInd].x))) {
+        // std::cout << pixCount << std::endl;
+        if (checkInBetween(centPixel, img.getPixelVal(circlePoints[currInd].x, circlePoints[currInd].y))) {
             pixCount=0;
             currInd++; 
         } else {
@@ -171,10 +191,13 @@ bool FastDetector::checkContiguousPixels(uint8_t centPixel, const std::vector<cv
             return true;
         }
     }
+
     return false;
 }
 
 inline bool FastDetector::checkInBetween( uint8_t centPixel,  uint8_t condPixel) {
-    if ((centPixel > condPixel - intensityThreshold) && (centPixel < condPixel + intensityThreshold)) {return true;}
+    if ((centPixel > condPixel - intensityThreshold) && (centPixel < condPixel + intensityThreshold)) {
+        return true;
+    }
     return false;
 }

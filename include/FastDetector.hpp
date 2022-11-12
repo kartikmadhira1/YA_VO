@@ -22,15 +22,16 @@ class FastDetector {
         int minDetectionThreshold;
         // Bresenham radius
         int bresRadius;
-        int intensityThreshold;
+        uint8_t intensityThreshold;
 
     public :
-        FastDetector(int minDetectionThresold=12, int intensityThreshold=50) {
+        FastDetector(int minDetectionThresold=12, uint8_t intensityThreshold=50) {
             minDetectionThreshold=12;
             bresRadius=3;
             intensityThreshold=50;
         }
         void putPixel(Image &img, cv::Point pt);
+        void putPixel(Image &img, cv::Point pt, uint8_t pixVal);
         std::vector<cv::Point2i> getAllSymPoints(int x, int y);
         std::vector<cv::Point2i> getFastFeatures(const Image &img);
         std::vector<cv::Point2i> getBresenhamCirclePoints(const Image &img, int x, int y);
