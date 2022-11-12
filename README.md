@@ -1,1 +1,1 @@
-# YA_SFM
+# Yet Another - Visual Intertial Odometry for fun!
