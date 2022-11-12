@@ -1,5 +1,19 @@
 #include "../include/FastDetector.hpp"
 
+struct FastFeature {
+    public:
+        FastFeature(const cv::Point2i &pt, float cornerResponse) {
+            this->x = pt.x;
+            this->y = pt.y;
+        }
+        int x;
+        int y;
+        float cornerResponse;
+}
+
+
+
+
 static bool compFirst(const std::pair<int, int> &pair1, const std::pair<int, int> &pair2) {
     if (pair1.second < pair2.second) {
         return true;
@@ -121,7 +135,7 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
     // 4. If 3 is false then check indices 5, 13 in the range [Ip-thres, Ip+thres], if ONE of them is true, then move to 5.
     // 5. If 3 and 4 false, then check if the 12 continous pixels DONT fall in the zone.
 
-    std::vector<cv::Point2i> retCorners;
+    std::vector<FastFeature> retCorners;
     // uint8_t pixelVal = (uint8_t)img.rawImage.data;
     for (int i=4;i<img.rawImage.rows-4;i++) {
         for(int j=4;j<img.rawImage.cols-4;j++) {
@@ -159,7 +173,9 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
                     }
                     if (checkContiguousPixels(centPixel, circlePoints, img)) {
                         // This is a valid corner
-                        retCorners.push_back(cv::Point2i(i, j));
+                        float corScore = getHarrisCornerResponse(img, i, j)
+                        FastFeature newFeature(cv::Point2i(i, j), corScore);
+                        retCorners.push_back(newFeature);
                     }
 
                 } else {
@@ -169,6 +185,12 @@ std::vector<cv::Point2i> FastDetector::getFastFeatures(const Image &img) {
 
         }
     }
+
+    // sort the corners based on the score
+
+    std::sort(retCorners.begin(), retCorners.end(), [](const FastFeature &a, const FastFeature &b) {
+        return a.cornerScore > b.cornerScore;
+    });
     return retCorners;
 }
 
@@ -201,3 +223,81 @@ inline bool FastDetector::checkInBetween( uint8_t centPixel,  uint8_t condPixel)
     }
     return false;
 }
+
+// Get harris corner response for a single FAST detected corner point
+void FastDetector::convolve2d(const Image &img, cv::Mat kernel, cv::Mat &output) {
+    // 1. Get the kernel size
+    // 2. Get the image size
+    // 3. For each pixel in the image
+    // 4. Get the kernel size around the pixel
+    // 5. Multiply the kernel with the image patch
+    // 6. Sum the values and store in the output image
+    // 7. Return the output image
+
+    // Add border to the original image
+
+    cv::Mat imgWithBorder;
+    cv::copyMakeBorder(img.rawImage, imgWithBorder, 1, 1, 1, 1, cv::BORDER_CONSTANT, 0);
+
+    int kernelSize = kernel.rows;
+    int imgSize = img.rawImage.rows;
+    cv::Mat outputImg = cv::Mat::zeros(imgSize, imgSize, CV_32FC1);
+    for (int i=0;i<imgSize;i++) {
+        for (int j=0;j<imgSize;j++) {
+            float sum = 0;
+            for (int k=0;k<kernelSize;k++) {
+                for (int l=0;l<kernelSize;l++) {
+                    sum += kernel.at<float>(k, l) * imgWithBorder.at<uint8_t>(i, j);
+                }
+            }
+            outputImg.at<float>(i, j) = sum;
+        }
+    }
+}
+
+
+
+void FastDetector::preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy) { 
+    // precompute the harris moments for the image
+
+    // Get x derivate first with sobel operator
+    cv::Mat sobelx = (cv::Mat_<int>(3,3) << -1, 0, 1, -2, 0, 2, -1, 0, 1);
+    cv::Mat sobely = (cv::Mat_<int>(3,3) << -1, -2, -1, 0, 0, 0, 1, 2, 1);
+
+    convolve2d(img, sobelx, Ix);
+    convolve2d(img, sobely, Iy);
+
+}
+float FastDetector::getHarrisCornerResponse(const Image &img, int x, int y) {
+    // 1. Convolve image with x and y derivative kernels Ix, Iy
+    // 2. Compute Ix^2, Iy^2, Ix*Iy
+    // 3. 
+    cv::Mat Ix = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
+    cv::Mat Iy = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
+    preComputeHarris(img, Ix, Iy);
+
+    cv::Mat Ix2 = Ix.mul(Ix);
+    cv::Mat Iy2 = Iy.mul(Iy);
+    cv::Mat Ixy = Ix.mul(Iy);
+
+    cv::Mat M = cv::Mat::zeros(2, 2, CV_32FC1);
+
+    for (int i=x-1;i<=x+1;i++) {
+        for (int j=y-1;j<=y+1;j++) {
+            M.at<float>(0, 0) += Ix2.at<float>(i, j);
+            M.at<float>(0, 1) += Ixy.at<float>(i, j);
+            M.at<float>(1, 0) += Ixy.at<float>(i, j);
+            M.at<float>(1, 1) += Iy2.at<float>(i, j);
+        }
+    }
+
+    cv::Mat eigenValues;
+    cv::eigen(M, eigenValues);
+    
+    float harrisResponse = eigenValues.at<float>(0, 0) * eigenValues.at<float>(1, 1) - eigenValues.at<float>(0, 1) * eigenValues.at<float>(1, 0) - 0.04 * (eigenValues.at<float>(0, 0) + eigenValues.at<float>(1, 1)) * (eigenValues.at<float>(0, 0) + eigenValues.at<float>(1, 1));
+
+    return harrisResponse;
+}
+    
+
+

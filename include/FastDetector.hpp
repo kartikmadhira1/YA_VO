@@ -32,6 +32,9 @@ class FastDetector {
         }
         void putPixel(Image &img, cv::Point pt);
         void putPixel(Image &img, cv::Point pt, uint8_t pixVal);
+        void convolve2d(const Image &img, cv::Mat kernel, cv::Mat &output)
+        void preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy)
+        float getHarrisCornerResponse(const Image &img, int x, int y);
         std::vector<cv::Point2i> getAllSymPoints(int x, int y);
         std::vector<cv::Point2i> getFastFeatures(const Image &img);
         std::vector<cv::Point2i> getBresenhamCirclePoints(const Image &img, int x, int y);
