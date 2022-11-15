@@ -23,22 +23,27 @@ class FastDetector {
         // Bresenham radius
         int bresRadius;
         uint8_t intensityThreshold;
+        int fastCornerNumThreshold;
+        int harrisThreshold;
 
     public :
         FastDetector(int minDetectionThresold=12, uint8_t intensityThreshold=50) {
-            minDetectionThreshold=12;
-            bresRadius=3;
-            intensityThreshold=50;
+            this->minDetectionThreshold=12;
+            this->bresRadius=3;
+            this->intensityThreshold=50;
+            this->fastCornerNumThreshold=50;
+            this->harrisThreshold=2;
         }
+        void putPixelColor(Image &img, cv::Point pt);
         void putPixel(Image &img, cv::Point pt);
         void putPixel(Image &img, cv::Point pt, uint8_t pixVal);
-        void convolve2d(const Image &img, cv::Mat kernel, cv::Mat &output)
-        void preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy)
+        void convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output);
+        void preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy);
         float getHarrisCornerResponse(const Image &img, int x, int y);
-        std::vector<cv::Point2i> getAllSymPoints(int x, int y);
-        std::vector<cv::Point2i> getFastFeatures(const Image &img);
-        std::vector<cv::Point2i> getBresenhamCirclePoints(const Image &img, int x, int y);
-        bool checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point2i> &circlePoints, const Image &img);
+        std::vector<cv::Point> getAllSymPoints(int x, int y);
+        std::vector<cv::Point> getFastFeatures(const Image &img);
+        std::vector<cv::Point> getBresenhamCirclePoints(const Image &img, int x, int y);
+        bool checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point> &circlePoints, const Image &img);
         inline bool checkInBetween( uint8_t centPixel, uint8_t condPixel);
         ~FastDetector() {
         }

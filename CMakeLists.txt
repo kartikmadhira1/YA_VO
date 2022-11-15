@@ -48,7 +48,7 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc
 )
 target_link_libraries(
   LoopHandlerTest

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "../include/FastDetector.hpp"
-
+#include "../include/LoopHandler.hpp"
 
 
 TEST(FastDetector, BresenhamCircleCheck) {
@@ -31,10 +31,10 @@ TEST(FastDetector, BresenhamCircleCheck) {
 }
 
 
-// Check if the getFastFeatures works on one specific example for a bresenham circle.
+// // Check if the getFastFeatures works on one specific example for a bresenham circle.
 
 
-// First check checkContiguousPixels for a specific test case
+// // First check checkContiguousPixels for a specific test case
 TEST(FastDetector, CheckContiguosPixels) {
 
     cv::Mat testcv(cv::Size(50,50), CV_8UC1, cv::Scalar(0));
@@ -89,7 +89,36 @@ TEST(FastDetector, GetFeaturesTest) {
     Image testImage(testcv);
     FastDetector fd(12, 50);
     auto features = fd.getFastFeatures(testImage);
-    fd.putPixel(testImage, cv::Point(25, 25), 0);
+    for (auto &each : features) {
+         std::cout << each << std::endl;
+            // fd.putPixelColor(testRGBImage, each);
+            // cv::circle(imgRGB, each, 5, cv::Scalar(255, 255, 255), 2);
+        }
+    // fd.putPixel(testImage, cv::Point(25, 25), 0);
     // cv::imwrite("testFeat.png", testImage.rawImage);
+
+}
+
+
+
+
+TEST(FastDetectors, CheckCorners) {
+    std::string configPath = "../config/KITTI_mock_test.json";
+    LoopHandler Lh(configPath);
+    cv::Mat testImage = cv::imread( Lh.leftPathTrain[1],0);
+    Image testImageObj(testImage);
+    FastDetector fd(12, 50);
+    auto features = fd.getFastFeatures(testImageObj);
+    
+    cv::Mat imgRGB;
+
+    cv::cvtColor(testImage, imgRGB, cv::COLOR_GRAY2RGB);
+    for (cv::Point &each : features) {
+        cv::circle(imgRGB, cv::Point(each.y, each.x), 2, cv::Scalar(0, 255, 0), 2);
+    }
+    // std::cout << type2str(testImage.type()) << std::endl;
+    // std::cout << type2str(testAgain.type()) << std::endl;
+
+    cv::imwrite("testAllFeat1.png", imgRGB);
 
 }

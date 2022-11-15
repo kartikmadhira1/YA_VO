@@ -7,6 +7,7 @@
  */
 
 Image::Image(const cv::Mat &img) {
+   rawImage = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
    img.copyTo(this->rawImage);
 
    // Undistort image here itself in the constructor
