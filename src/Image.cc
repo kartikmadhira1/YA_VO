@@ -1,5 +1,6 @@
 #include "../include/Image.hpp"
-
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/xfeatures2d/cuda.hpp>
 /**
  * @brief Construct a new Image:: Image object
  * 
@@ -16,3 +17,13 @@ Image::Image(const cv::Mat &img) {
 uint8_t Image::getPixelVal(int i, int j) const {
    return this->rawImage.data[i*this->rawImage.cols + j];
 }
+
+
+int Image::getH() {
+   return this->rawImage.rows;
+}
+
+int Image::getW() {
+   return this->rawImage.cols;
+}
+

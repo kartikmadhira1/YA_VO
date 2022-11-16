@@ -1,6 +1,6 @@
 #pragma once
 #include "Utils.hpp"
-#include "FeatureExtractor.hpp"
+#include "BriefDescriptor.hpp"
 
 
 
@@ -19,8 +19,10 @@ class Image {
         }
         cv::Mat img;
         cv::Mat rawImage;
-        FeatExt _features;
+        std::vector<KeyPoint> keypoints;
         Image(const cv::Mat &img);
+        int getW();
+        int getH();
         void unDistort();
         uint8_t getPixelVal(int i, int j) const ;
         ~Image() {

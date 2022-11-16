@@ -119,6 +119,6 @@ TEST(FastDetectors, CheckCorners) {
     // std::cout << type2str(testImage.type()) << std::endl;
     // std::cout << type2str(testAgain.type()) << std::endl;
 
-    cv::imwrite("testAllFeat1.png", imgRGB);
+    cv::imwrite("testAllFeat.png", imgRGB);
 
 }

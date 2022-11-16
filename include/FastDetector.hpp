@@ -31,7 +31,7 @@ class FastDetector {
             this->minDetectionThreshold=12;
             this->bresRadius=3;
             this->intensityThreshold=50;
-            this->fastCornerNumThreshold=50;
+            this->fastCornerNumThreshold=300;
             this->harrisThreshold=2;
         }
         void putPixelColor(Image &img, cv::Point pt);
