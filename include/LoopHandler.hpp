@@ -1,18 +1,13 @@
-#pragma once
 #include <fstream>
 #include <jsoncpp/json/json.h>
-#include "Image.hpp"
-
-
-
+#include "Utils.hpp"
 
 /*
 1. Load config file - what sequence, base path, etc.
 2. iterate through images
 3.  Need methods like next() and iter() for image iteration -> this should be different class or should be in LoopHandler?
 */
-
-
+class Image;
 // enum sensorType {stereo, mono}
 class LoopHandler {
     private:
@@ -21,7 +16,6 @@ class LoopHandler {
         std::string rightImagesPath;
         bool isStereo;
 
-        void putPixel(Image img, int x, int y);
         void generatePathTrain();
     public:
         std::vector<std::string> leftPathTrain;
@@ -31,7 +25,6 @@ class LoopHandler {
         std::string getSeqNo();
         bool stereoStatus();
         std::string getLeftImagesPath();
-        Image getNextImage();
         int getLeftTrainLength();
         ~LoopHandler();
 };

@@ -1,7 +1,6 @@
 #pragma once
-#include "Utils.hpp"
-#include "Image.hpp"
 #include "LoopHandler.hpp"
+#include "Image.hpp"
 #include <random>
 
 class KeyPoint {
@@ -11,20 +10,27 @@ class KeyPoint {
             this->y = _y;
             this->id = _id;
         }
+        KeyPoint() {}
         int x;
         int y;
         int id;
-        uchar *featVec[32];
+        uchar *featVec[32]={};
 };
 
 
-class Match {
+class Matches {
     public:
+        Matches(const KeyPoint &_pt1, const KeyPoint &_pt2, int distance) {
+            this->pt1 = _pt1;
+            this->pt2 = _pt2;
+            this->distance = distance;
+        }
+    Matches() {}
+    KeyPoint pt1;
+    KeyPoint pt2;
+    int distance;
 
-
-
-}
-
+};
 
 class Brief {
     private:
@@ -37,9 +43,10 @@ class Brief {
             this->offsets = preComputeOffsets();
             this->patchSize = numTests;
         }
+        int popCount(uchar featVec);
         inline bool checkBoundry(int x, int y, int width, int height);
-        int hammingDistance(uchar *featVec1, uchar *featVec2);
+        int hammingDistance(uchar *featVec1[32], uchar *featVec2[32]);
         std::vector<std::vector<int>> preComputeOffsets();
-        void computeBrief(const std::vector<cv::Point> &detectedCornerPoints, const Image &img);
-
-}
+        void computeBrief(const std::vector<cv::Point> &detectedCornerPoints,  Image &img);
+        std::vector<Matches> matchFeatures( Image &img1,  Image &img2);
+};

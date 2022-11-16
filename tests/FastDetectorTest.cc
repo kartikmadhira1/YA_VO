@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "../include/FastDetector.hpp"
-#include "../include/LoopHandler.hpp"
+// #include "../include/LoopHandler.hpp"
 
 
 TEST(FastDetector, BresenhamCircleCheck) {

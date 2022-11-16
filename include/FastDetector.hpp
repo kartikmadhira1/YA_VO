@@ -38,6 +38,7 @@ class FastDetector {
         void putPixel(Image &img, cv::Point pt);
         void putPixel(Image &img, cv::Point pt, uint8_t pixVal);
         void convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output);
+        void gaussianBlur(const Image &img, int sigma, cv::Mat &outImage);
         void preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy);
         float getHarrisCornerResponse(const Image &img, int x, int y);
         std::vector<cv::Point> getAllSymPoints(int x, int y);
@@ -45,6 +46,7 @@ class FastDetector {
         std::vector<cv::Point> getBresenhamCirclePoints(const Image &img, int x, int y);
         bool checkContiguousPixels(uint8_t centPixel, const std::vector<cv::Point> &circlePoints, const Image &img);
         inline bool checkInBetween( uint8_t centPixel, uint8_t condPixel);
+
         ~FastDetector() {
         }
 };

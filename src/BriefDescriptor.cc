@@ -1,9 +1,6 @@
 #include "../include/BriefDescriptor.hpp"
 
 
-
-
-
 std::vector<std::vector<int>> Brief::preComputeOffsets() {
     // We are going to generate a vector with size numTests*4
     // Randomly generate 4 values from -8 to +8
@@ -21,7 +18,7 @@ std::vector<std::vector<int>> Brief::preComputeOffsets() {
     }
 }
 
-void Brief::computeBrief(const std::vector<cv::Point> &detectedCornerPoints, const Image &img) {
+void Brief::computeBrief(const std::vector<cv::Point> &detectedCornerPoints, Image &img) {
     
     for (int i=0; i<detectedCornerPoints.size(); i++) {
         // Make this is a keyPoint
@@ -42,10 +39,10 @@ void Brief::computeBrief(const std::vector<cv::Point> &detectedCornerPoints, con
                     if (img.getPixelVal(P1.x, P1.y) > img.getPixelVal(P2.x, P2.y)) {
                         // Set the ith bit to 1
                         // 1 << (j%8) means setting 1 at the th indices 0,1,2,3,4,5,6,7 in the ith byte
-                        newKpt.featVec[ithDescUcharIndex] |= (1 << (j%8));
+                        *newKpt.featVec[ithDescUcharIndex] |= 1 << (j%8);
                         // https://stackoverflow.com/questions/47981/how-do-i-set-clear-and-toggle-a-single-bit
                     } else {
-                        newKpt.featVec[ithDescUcharIndex] &= ~(1 << (j%8));
+                        *newKpt.featVec[ithDescUcharIndex] &= ~(1 << (j%8));
                     }                    
                 }
                 
@@ -54,7 +51,6 @@ void Brief::computeBrief(const std::vector<cv::Point> &detectedCornerPoints, con
     }
 }
 
-bool 
 
 
 inline bool Brief::checkBoundry(int x, int y, int width, int height) {
@@ -68,12 +64,12 @@ inline bool Brief::checkBoundry(int x, int y, int width, int height) {
 }
 
 
-int Brief::hammingDistance(uchar *featVec1, uchar *featVec2) {
+int Brief::hammingDistance(uchar *featVec1[32], uchar *featVec2[32]) {
     int hammingDist = 0;
     for (int i=0; i<32; i++) {
-        hammingDist += __builtin_popcount(featVec1[i] ^ featVec2[i]);
+        hammingDist += popCount(*featVec1[i] ^ *featVec2[i]);
     }
-    return false;
+    return hammingDist;
 }
 
 
@@ -82,9 +78,32 @@ int Brief::hammingDistance(uchar *featVec1, uchar *featVec2) {
 int Brief::popCount(uchar featVec) {
     int count = 0;
     while(featVec!=0){
-        if (c & 0x1) {
+        if (featVec & 0x1) {
             count++;
         }
         featVec = featVec >> 1;
+    }
+}
+
+
+std::vector<Matches> Brief::matchFeatures( Image &img1,  Image &img2) {
+    std::vector<Matches> matches;
+    for (int i=0; i<img1.keypoints.size(); i++) {
+        int minDist = INT_MAX;
+        KeyPoint kp2(0,0,0);
+        for (int j=0; j<img2.keypoints.size(); j++) {
+
+            int hammingDist = hammingDistance(img1.keypoints[i].featVec, img2.keypoints[j].featVec);
+            if (hammingDist < minDist) {
+                minDist = hammingDist;
+                // update match with the lowest hamming distance
+                kp2.x = img2.keypoints[j].x;
+                kp2.y = img2.keypoints[j].y;
+                kp2.id = img2.keypoints[j].id;
+            }
+        }
+        // create Match pair with the lowest hamming distance
+        Matches match(img1.keypoints[i], kp2, minDist);
+        matches.push_back(match);
     }
 }

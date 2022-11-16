@@ -173,11 +173,10 @@ void FastDetector::convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output
     // Add border to the original image
 
     cv::Mat imgWithBorder = cv::Mat::zeros(img.rawImage.rows + 2, img.rawImage.cols + 2, CV_8UC1);
-    cv::copyMakeBorder(img.rawImage, imgWithBorder, 1, 1, 1, 1, cv::BORDER_CONSTANT, 0);
 
     int kernelSize = kernel.rows;
     int imgSize = img.rawImage.rows;
-    cv::Mat outputImg = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
+    cv::copyMakeBorder(img.rawImage, imgWithBorder, int(kernelSize/2), int(kernelSize/2), int(kernelSize/2), int(kernelSize/2), cv::BORDER_CONSTANT, 0);
     for (int i=1;i<img.rawImage.rows-1;i++) {
         for (int j=1;j<img.rawImage.cols-1;j++) {
             float sum = 0;
@@ -205,6 +204,35 @@ void FastDetector::preComputeHarris(const Image &img, cv::Mat &Ix, cv::Mat &Iy) 
     convolve2d(img, sobely, Iy);
 
 }
+
+
+
+void FastDetector::gaussianBlur(const Image &img, int sigma, cv::Mat &outImage) {
+    // Thumb rule is the kernel size is 3*sigma
+    int kernelSize = (int)3*sigma;
+    cv::Mat gaussKernel1DX = cv::Mat::zeros(1, kernelSize, CV_32FC1);
+
+    // Create two 1D gaussian kernels - X
+    for (int i=0;i<kernelSize;i++) {
+        gaussKernel1DX.at<float>(0, i) = (1/(sqrt(2*M_PI)*sigma)) * exp(-pow(i, 2)/(2*pow(sigma, 2)));
+    }
+    // Create two 1D gaussian kernels - Y
+
+    cv::Mat gaussKernel1DY = cv::Mat::zeros(kernelSize, 1, CV_32FC1);
+    for (int i=0;i<kernelSize;i++) {
+        gaussKernel1DY.at<float>(i, 0) = (1/(sqrt(2*M_PI)*sigma)) * exp(-pow(i, 2)/(2*pow(sigma, 2)));
+    }
+    // Ideally we should be convolving with conseqcutive 1D kernels
+    // @todo: Implement convolving with 1d filter
+    cv::Mat gaussKernel = gaussKernel1DX * gaussKernel1DY;
+
+
+    convolve2d(img, gaussKernel, outImage);
+
+    outImage.convertTo(outImage, CV_8UC1);
+}
+
+
 float FastDetector::getHarrisCornerResponse(const Image &img, int x, int y) {
     // 1. Convolve image with x and y derivative kernels Ix, Iy
     // 2. Compute Ix^2, Iy^2, Ix*Iy
