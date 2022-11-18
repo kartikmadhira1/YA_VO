@@ -171,24 +171,32 @@ void FastDetector::convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output
     // 7. Return the output image
 
     // Add border to the original image
-
-    cv::Mat imgWithBorder = cv::Mat::zeros(img.rawImage.rows + 2, img.rawImage.cols + 2, CV_8UC1);
-
+    int sumKer=0;
     int kernelSize = kernel.rows;
     int imgSize = img.rawImage.rows;
+    for (int k=0;k<kernelSize;k++) {
+        for (int l=0;l<kernelSize;l++) {
+    
+            sumKer += kernel.at<float>(k, l);
+        }
+    }
+    cv::Mat imgWithBorder = cv::Mat::zeros(img.rawImage.rows + 2, img.rawImage.cols + 2, CV_8UC1);
+
+    
     cv::copyMakeBorder(img.rawImage, imgWithBorder, int(kernelSize/2), int(kernelSize/2), int(kernelSize/2), int(kernelSize/2), cv::BORDER_CONSTANT, 0);
-    for (int i=1;i<img.rawImage.rows-1;i++) {
-        for (int j=1;j<img.rawImage.cols-1;j++) {
+    for (int i=kernelSize/2;i<img.rawImage.rows-int(kernelSize/2);i++) {
+        for (int j=kernelSize/2;j<img.rawImage.cols-int(kernelSize/2);j++) {
             float sum = 0;
             for (int k=0;k<kernelSize;k++) {
                 for (int l=0;l<kernelSize;l++) {
             
-                    sum += kernel.at<float>(k, l) * imgWithBorder.at<uchar>(i+k-1, j+l-1);
+                    sum += kernel.at<float>(k, l) * imgWithBorder.at<uchar>(i+k-int(kernelSize/2), j+l-int(kernelSize/2));
                 }
             }
-            output.at<float>(i, j) = sum;
+            output.at<float>(i-int(kernelSize/2), j-int(kernelSize/2)) = sum;
         }
     }
+    cv::imwrite("output.jpg", output);
 }
 
 

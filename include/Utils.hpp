@@ -6,6 +6,7 @@
 #include <string>
 #include <ctype.h>
 #include <boost/filesystem.hpp>
+#include "opencv4/opencv2/core.hpp"
 #include "opencv4/opencv2/imgproc/imgproc.hpp"
 #include "opencv4/opencv2/highgui/highgui.hpp"
 
@@ -24,8 +25,14 @@ struct Camera {
         }
         cv::Mat K;
         cv::Mat fullMatrix;
-        void getFx();
-        void getFy();
+        float getFx();
+        float getFy();
+        float getCx() {
+            return K.at<double>(0,2);
+        }
+        float getCy() {
+            return K.at<double>(1,2);
+        }
         void getCalibMat() {}
         void printK() {
             for (int i = 0; i < K.rows; i++) {

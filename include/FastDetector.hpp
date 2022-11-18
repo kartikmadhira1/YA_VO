@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <set>
 #include "Utils.hpp"
@@ -30,8 +31,8 @@ class FastDetector {
         FastDetector(int minDetectionThresold=12, uint8_t intensityThreshold=50) {
             this->minDetectionThreshold=12;
             this->bresRadius=3;
-            this->intensityThreshold=50;
-            this->fastCornerNumThreshold=300;
+            this->intensityThreshold=120;
+            this->fastCornerNumThreshold=100;
             this->harrisThreshold=2;
         }
         void putPixelColor(Image &img, cv::Point pt);

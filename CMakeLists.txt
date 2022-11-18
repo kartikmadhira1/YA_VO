@@ -45,6 +45,17 @@ target_link_libraries(
   GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES}
 )
 
+add_executable(
+  BriefDescriptorTest
+  tests/BriefDescriptorTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc
+)
+target_link_libraries(
+  BriefDescriptorTest
+  GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES}
+)
+
+
+
 
 add_executable(
   LoopHandlerTest
@@ -68,4 +79,4 @@ target_link_libraries(
 
 
 include(GoogleTest)
-gtest_discover_tests(UtilsTest LoopHandlerTest FastDetectorTest ImageTest)
+gtest_discover_tests(UtilsTest LoopHandlerTest FastDetectorTest ImageTest BriefDescriptorTest)

@@ -1,8 +1,9 @@
 #pragma once
 #include "LoopHandler.hpp"
 #include "Image.hpp"
+#include "FastDetector.hpp"
 #include <random>
-
+#include <algorithm>
 class KeyPoint {
     public:
         KeyPoint(const int _x, const int _y, const int _id) {
@@ -14,7 +15,8 @@ class KeyPoint {
         int x;
         int y;
         int id;
-        uchar *featVec[32]={};
+        bool matched = false;
+        uchar featVec[32]={};
 };
 
 
@@ -38,15 +40,25 @@ class Brief {
         int patchSize;
         std::vector<std::vector<int>> offsets;
     public:
+        std::vector<std::vector<int>> preComputeOffsets();
+
         Brief(int numTests) {
             // Means that there will be 256 tests for the patch.
-            this->offsets = preComputeOffsets();
+            this->offsets = this->preComputeOffsets();
             this->patchSize = numTests;
         }
+
+            
         int popCount(uchar featVec);
         inline bool checkBoundry(int x, int y, int width, int height);
-        int hammingDistance(uchar *featVec1[32], uchar *featVec2[32]);
-        std::vector<std::vector<int>> preComputeOffsets();
+        int hammingDistance(uchar featVec1[32], uchar featVec2[32]);
+        void convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output);
+        void gaussianBlur(const Image &img, int sigma, cv::Mat &outImage);
         void computeBrief(const std::vector<cv::Point> &detectedCornerPoints,  Image &img);
         std::vector<Matches> matchFeatures( Image &img1,  Image &img2);
+        cv::Mat drawMatches( Image &img1,  Image &img2, std::vector<Matches> &matches);
+        void removeOutliers(std::vector<Matches> &matches, std::vector<Matches> &newMatches, int threshold);
+        ~Brief() {
+            // std::cout << "Brief destructor called" << std::endl;
+        }
 };

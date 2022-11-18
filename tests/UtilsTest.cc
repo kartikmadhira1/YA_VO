@@ -19,11 +19,13 @@ TEST(UtilsCheck, checkInstrinsicIntegrity) {
       std::string path = "/home/kartik/da-sauce/dataset/sequences/00/calib.txt";
       Intrinsics intrinsics;
       getCalibParams(path, intrinsics);
-      // intrinsics.Left.printK();
+      
+      intrinsics.Left.printK();
       // intrinsics.Right.printK();
       EXPECT_NEAR(intrinsics.Left.K.at<double>(0,0), 718.856, 1);
       EXPECT_NEAR(intrinsics.Right.K.at<double>(0,0), 718.856, 1);
       EXPECT_NEAR(intrinsics.Left.K.at<double>(1,2), 185.216, 1);
       EXPECT_NEAR(intrinsics.Right.K.at<double>(1,2), 185.216, 1);
+
 
 }
