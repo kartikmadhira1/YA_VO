@@ -40,22 +40,26 @@ void getCalibParams(std::string _path, Intrinsics &calib) {
     std::vector<std::string> stringVector;
     std::string line;
     std::ifstream _file(_path);
-    int _i = 0;
-    if (_file.is_open()) {
-        for (int i=0; i<2;i++) {
-                cv::Mat cvMat =  cv::Mat(4, 4, CV_64F);
-                getline(_file, line);
-                parseCalibString(line, cvMat);
-                if (i == 0) {
-                    Camera left(cvMat);
-                    calib.Left = left;
-                } else {
-                    Camera right(cvMat);
-                    calib.Right = right;
+    if (_file.good()) {
+        int _i = 0;
+        if (_file.is_open()) {
+            for (int i=0; i<2;i++) {
+                    cv::Mat cvMat =  cv::Mat(4, 4, CV_64F);
+                    getline(_file, line);
+                    parseCalibString(line, cvMat);
+                    if (i == 0) {
+                        Camera left(cvMat);
+                        calib.Left = left;
+                    } else {
+                        Camera right(cvMat);
+                        calib.Right = right;
+                    }
                 }
+                
             }
-            
-        }
+    } else {
+        std::cout << "File not found" << std::endl;
+    }
 
 }
 

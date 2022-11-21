@@ -75,7 +75,6 @@ void Brief::gaussianBlur(const Image &img, int sigma, cv::Mat &outImage) {
     // Ideally we should be convolving with conseqcutive 1D kernels
     // @todo: Implement convolving with 1d filter
     cv::Mat gaussKernel = gaussKernel1DX * gaussKernel1DY;
-    std::cout << gaussKernel.rows << " " << gaussKernel.cols << std::endl;
 
     convolve2d(img, gaussKernel, outImage);
 
@@ -95,7 +94,6 @@ void Brief::computeBrief(const std::vector<cv::Point> &detectedCornerPoints, Ima
         // Make this is a keyPoint
         KeyPoint newKpt(detectedCornerPoints[i].x, detectedCornerPoints[i].y, i);
         // Now for this keypoint, make a 256 bit featVec based on the offsets generated;
-        std::cout << newKpt.x << " " << newKpt.y << " w:" << img.getW() << " h:" << img.getH() << std::endl;
         if (checkBoundry(newKpt.y, newKpt.x, img.getW(), img.getH())) {
                 for (int j=0; j<patchSize;j++) {
 
@@ -187,7 +185,6 @@ std::vector<Matches> Brief::matchFeatures( Image &img1,  Image &img2) {
 
 cv::Mat Brief::drawMatches(Image &img1, Image &img2, std::vector<Matches> &matches) {
     cv::Mat output = cv::Mat::zeros(img1.getH(), img1.getW()+img2.getW(), CV_8UC1);
-    std::cout << "drawing matches" << std::endl;
     // Copy img1 to the left half of the output
     for (int i=0;i<img1.getH();i++) {
         for (int j=0;j<img1.getW()-1;j++) {
@@ -221,9 +218,6 @@ void Brief::removeOutliers(std::vector<Matches> &matches, std::vector<Matches> &
     auto result = std::minmax_element(matches.begin(), matches.end(), [](const Matches &a, const Matches &b) {
         return a.distance < b.distance;
     });
-
-    std::cout << "min dist: " << result.first->distance << std::endl;
-    std::cout << "max dist: " << result.second->distance << std::endl;
 
     // Remove outliers
 

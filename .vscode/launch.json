@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name":"(gdb) launch",
+            "type":"cppdbg",
+            "request":"launch",
+            "cwd" : "${workspaceFolder}",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "program": "/home/kartik/da-sauce/hope/build/3DHandlerTest"
+        }
+
+
+
+    ]
+}

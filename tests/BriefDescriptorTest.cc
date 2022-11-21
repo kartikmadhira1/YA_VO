@@ -5,7 +5,7 @@
 
 
 // Hard rule on allowing only grayscale images 
-TEST(BriefDescritor, GetSideBySideImage) {
+TEST(BriefDescritor, GetSideBySideImageMatches) {
     Brief brief(256);
 
     std::string configPath = "../config/KITTI_mock_test.json";
@@ -50,14 +50,6 @@ TEST(BriefDescritor, GetSideBySideImage) {
 
 
     cv::imwrite("testSideBySide.png", sideBySide);
-    // cv::Mat imgRGB;
-
-    // cv::cvtColor(testImage, imgRGB, cv::COLOR_GRAY2RGB);
-    // for (cv::Point &each : features) {
-    //     cv::circle(imgRGB, cv::Point(each.y, each.x), 2, cv::Scalar(0, 255, 0), 2);
-    // }
-    // std::cout << type2str(testImage.type()) << std::endl;
-    // std::cout << type2str(testAgain.type()) << std::endl;
 
 }
 
