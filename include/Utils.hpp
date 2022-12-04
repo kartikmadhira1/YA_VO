@@ -25,6 +25,9 @@ struct Camera {
         }
         cv::Mat K;
         cv::Mat fullMatrix;
+        cv::Mat getK() {
+            return K;
+        }
         float getFx() {
             return K.at<double>(0,0);
         }

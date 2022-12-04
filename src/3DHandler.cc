@@ -43,12 +43,15 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
 
     for (int i = 0; i < matches.size(); i++) {
 
-        double x1 = matches[i].pt1.y;
-        double y1 = matches[i].pt1.x;
+        double x1 = matches[i].pt1.x;
+        double y1 = matches[i].pt1.y;
 
-        double x2 = matches[i].pt2.y;
-        double y2 = matches[i].pt2.x;
+        double x2 = matches[i].pt2.x;
+        double y2 = matches[i].pt2.y;
         std::cout << "x1 " << x1 << " y1 " << y1 << std::endl;
+
+
+        // These points are now normalized image coordinates with the optical center as reference
         x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
         x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
         y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
@@ -65,11 +68,11 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
 
     for (int i = 0; i < matches.size(); i++) {
 
-        float x1 = matches[i].pt1.y;
-        float y1 = matches[i].pt1.x;
+        float x1 = matches[i].pt1.x;
+        float y1 = matches[i].pt1.y;
 
-        float x2 = matches[i].pt2.y;
-        float y2 = matches[i].pt2.x;
+        float x2 = matches[i].pt2.x;
+        float y2 = matches[i].pt2.y;
         x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
         x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
         y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
@@ -109,15 +112,28 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
     // https://cmsc426.github.io/sfm/
  
     E = fullSolveSVD.vt.row(8).reshape(0, 3);
+
+    std::cout << "vt last row " << fullSolveSVD.vt.row(8)<< std::endl;
+    std::cout << "E :" << E << std::endl;
+
+    std::cout << E.rows << "<---row cols---->" << E.cols << std::endl;
+
     std::cout << type2str(E.type()) << std::endl;
     cv::SVD ESolveSVD(E, cv::SVD::FULL_UV); 
 
-    // Enforce the rank 2 constraint    
+    // Enforce the rank 2 constraint
+    ESolveSVD.w.at<double>(0) = 1;
+    ESolveSVD.w.at<double>(1) = 1;
+    ESolveSVD.w.at<double>(2) = 0;
+
+    std::cout << "E.w " << ESolveSVD.w << std::endl;
+
     w = cv::Mat::diag(ESolveSVD.w);
     w.at<double>(2, 2) = 0;
     vt = ESolveSVD.vt;
     u = ESolveSVD.u;
     E = ESolveSVD.u * w * ESolveSVD.vt;
+    std::cout << "E :" << E << std::endl;
 
     return true;
 
