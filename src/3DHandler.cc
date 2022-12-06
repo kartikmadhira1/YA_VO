@@ -23,7 +23,7 @@ std::pair<double, double> _3DHandler::getMeanVar(std::vector<double> &vec) {
     return std::make_pair(mean, std::sqrt(var));
 }
 
-bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat &E, cv::Mat &u, cv::Mat &w, cv::Mat &vt) {
+bool _3DHandler::getFundamentalMatrix(const std::vector<Matches> &matches, cv::Mat &F) {
     // 1. Get all the points in w.r.t to the optical center of the image
     // 2. For each of the match keypoints, stack them in the Nx9 matrix
     // 3. Compute the essential matrix using the SVD
@@ -36,7 +36,7 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
         return false;
     }
 
-    cv::Mat solveMat = cv::Mat::zeros(matches.size(), 9, CV_64F);
+    cv::Mat solveMat = cv::Mat::zeros(matches.size(), 9, CV_32FC1);
 
     std::vector<double> x1Vec, y1Vec, x2Vec, y2Vec;
 
@@ -48,14 +48,12 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
 
         double x2 = matches[i].pt2.x;
         double y2 = matches[i].pt2.y;
-        std::cout << "x1 " << x1 << " y1 " << y1 << std::endl;
-
 
         // These points are now normalized image coordinates with the optical center as reference
-        x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
-        x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
-        y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
-        y2 =  (y2 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+        // x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+        // y2 =  (y2 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
 
         x1Vec.push_back(x1);
         y1Vec.push_back(y1);
@@ -73,70 +71,162 @@ bool _3DHandler::getEssentialMatrix(const std::vector<Matches> &matches, cv::Mat
 
         float x2 = matches[i].pt2.x;
         float y2 = matches[i].pt2.y;
-        x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
-        x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
-        y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
-        y2 =  (y2 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+        // x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+        // y2 =  (y2 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
 
-        std::cout << "x1 " << x1 << " y1 " << y1 << std::endl;
 
         auto meanVec1 = getMeanVar(x1Vec);
         auto meanVec2 = getMeanVar(y1Vec);
         auto meanVec3 = getMeanVar(x2Vec);
         auto meanVec4 = getMeanVar(y2Vec);
 
-        double normX1 = (x1 - meanVec1.first)/meanVec1.second;
-        double normY1 = (y1 - meanVec2.first)/meanVec2.second;
-        double normX2 = (x2 - meanVec3.first)/meanVec3.second;
-        double normY2 = (y2 - meanVec4.first)/meanVec4.second;
+        float normX1 = (x1 - meanVec1.first)/(meanVec1.second + std::numeric_limits<float>::epsilon());
+        float normY1 = (y1 - meanVec2.first)/(meanVec2.second + std::numeric_limits<float>::epsilon());
+        float normX2 = (x2 - meanVec3.first)/(meanVec3.second + std::numeric_limits<float>::epsilon());
+        float normY2 = (y2 - meanVec4.first)/(meanVec4.second + std::numeric_limits<float>::epsilon());
         //
-
-        std::cout << "x1 norm " << normX1 << " y1 norm " << normY2 << std::endl;
  
-        solveMat.at<double>(i, 0) = normX1 * normX2;
-        solveMat.at<double>(i, 1) = normX1 * normY2;
-        solveMat.at<double>(i, 2) = normX1;
-        solveMat.at<double>(i, 3) = normY1 * normX2;
-        solveMat.at<double>(i, 4) = normY1 * normY2;
-        solveMat.at<double>(i, 5) = normY1;
-        solveMat.at<double>(i, 6) = normX2;
-        solveMat.at<double>(i, 7) = normY2;
-        solveMat.at<double>(i, 8) = 1;
+        solveMat.at<float>(i, 0) = normX1 * normX2;
+        solveMat.at<float>(i, 1) = normX1 * normY2;
+        solveMat.at<float>(i, 2) = normX1;
+        solveMat.at<float>(i, 3) = normY1 * normX2;
+        solveMat.at<float>(i, 4) = normY1 * normY2;
+        solveMat.at<float>(i, 5) = normY1;
+        solveMat.at<float>(i, 6) = normX2;
+        solveMat.at<float>(i, 7) = normY2;
+        solveMat.at<float>(i, 8) = 1;
     }
 
 
     // Solve for given solveMat which is Mx9, with SVD for solveMat.t() * solveMat
-    cv::SVD fullSolveSVD(solveMat, cv::SVD::FULL_UV); 
+    cv::SVD fullSolveSVD(solveMat.t()*solveMat, cv::SVD::FULL_UV); 
     
     // The last column of Vt is the null space
-    // https://cmsc426.github.io/sfm/
- 
-    E = fullSolveSVD.vt.row(8).reshape(0, 3);
 
-    std::cout << "vt last row " << fullSolveSVD.vt.row(8)<< std::endl;
-    std::cout << "E :" << E << std::endl;
+    F = fullSolveSVD.vt.row(8).reshape(1, 3);
 
-    std::cout << E.rows << "<---row cols---->" << E.cols << std::endl;
+    // // ########WARNING -> E IS F MATRIX FOR NOW FOR TESTING PURPOSES
 
-    std::cout << type2str(E.type()) << std::endl;
-    cv::SVD ESolveSVD(E, cv::SVD::FULL_UV); 
+    // E = intrinsics.Left.getK().t() * E * intrinsics.Left.getK();
+
+    // std::cout << "vt last row " << fullSolveSVD.vt.row(8)<< std::endl;
+    // std::cout << "E :" << E << std::endl;
+
+    // std::cout << E.rows << "<---row cols---->" << E.cols << std::endl;
+
+    // std::cout << type2str(E.type()) << std::endl;
+    cv::SVD FSolveSVD(F, cv::SVD::FULL_UV);
 
     // Enforce the rank 2 constraint
-    ESolveSVD.w.at<double>(0) = 1;
-    ESolveSVD.w.at<double>(1) = 1;
-    ESolveSVD.w.at<double>(2) = 0;
+ 
+    FSolveSVD.w.at<float>(2) = 0;
 
-    std::cout << "E.w " << ESolveSVD.w << std::endl;
 
-    w = cv::Mat::diag(ESolveSVD.w);
-    w.at<double>(2, 2) = 0;
-    vt = ESolveSVD.vt;
-    u = ESolveSVD.u;
-    E = ESolveSVD.u * w * ESolveSVD.vt;
-    std::cout << "E :" << E << std::endl;
-
+    cv::Mat w = cv::Mat::diag(FSolveSVD.w);
+    F = FSolveSVD.u * w * FSolveSVD.vt;
+    F = F/F.at<float>(2,2);
     return true;
 
+}
+
+float _3DHandler::unNormalizePoint(float pt, float mean, float var) {
+    return (pt * var) + mean;
+}
+
+bool _3DHandler::getFRANSAC(std::vector<Matches> matches, cv::Mat &F, std::pair<float, float> meanVar1, std::pair<float, float> meanVar2, 
+                                std::pair<float, float> meanVar3, std::pair<float, float> meanVar4,  int iterations=300, double threshold=0.1) {   
+
+    // 1. For N iterations, pick 8 random matches
+    // 2. Compute the fundamental matrix using the 8 matches
+    // 3. Compute the error for each match
+    // 4. If the error is less than a threshold, add it to the inlier set
+    // 5. If the inlier set is larger than the best inlier set, replace it
+    // 6. Refit the fundamental matrix using the inlier set
+    // 7. Return the fundamental matrix
+    if (matches.size() < 8) {
+        return false;
+    }
+    std::random_device seeder;
+    std::mt19937 generator(seeder());
+    std::uniform_int_distribution<int> dist(0, matches.size()-1);
+    cv::Mat finalF;
+    int maxInliers = INT_MIN;
+    for (int i = 0; i < iterations; i++) {
+        std::vector<Matches> newMatches;
+        for (int j = 0; j < 8; j++) {
+            newMatches.push_back(matches[dist(generator)]);
+        }
+        cv::Mat newF;
+        getFundamentalMatrix(newMatches, newF);
+        int inlierCount = 0;
+        std::vector<double> x1Vec, y1Vec, x2Vec, y2Vec;
+
+        // Get the mean and variance of the x and y coordinates
+        for (int l = 0; l < matches.size(); l++) {
+
+            double x1 = matches[l].pt1.x;
+            double y1 = matches[l].pt1.y;
+
+            double x2 = matches[l].pt2.x;
+            double y2 = matches[l].pt2.y;
+
+            x1Vec.push_back(x1);
+            y1Vec.push_back(y1);
+            x2Vec.push_back(x2);
+            y2Vec.push_back(y2);
+
+        }
+
+        // These points are now normalized image coordinates with the optical center as reference
+        // x1 = (x1 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // x2 = (x2 -intrinsics.Left.getCx())/intrinsics.Left.getFx();
+        // y1 =  (y1 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+        // y2 =  (y2 -intrinsics.Left.getCy())/intrinsics.Left.getFy();
+
+
+        auto meanVec1 = getMeanVar(x1Vec);
+        auto meanVec2 = getMeanVar(y1Vec);
+        auto meanVec3 = getMeanVar(x2Vec);
+        auto meanVec4 = getMeanVar(y2Vec);
+        for (int k = 0; k < matches.size(); k++) {
+
+            float x1 = matches[k].pt1.x;
+            float y1 = matches[k].pt1.y;
+
+            float x2 = matches[k].pt2.x;
+            float y2 = matches[k].pt2.y;
+
+
+            float normX1 = (x1 - meanVec1.first)/(meanVec1.second + std::numeric_limits<float>::epsilon());
+            float normY1 = (y1 - meanVec2.first)/(meanVec2.second + std::numeric_limits<float>::epsilon());
+            float normX2 = (x2 - meanVec3.first)/(meanVec3.second + std::numeric_limits<float>::epsilon());
+            float normY2 = (y2 - meanVec4.first)/(meanVec4.second + std::numeric_limits<float>::epsilon());
+
+            cv::Mat p1 = (cv::Mat_<float>(3, 1) << normX1, normY1, 1);
+            cv::Mat p2 = (cv::Mat_<float>(3, 1) << normX2, normY2, 1);
+
+
+            cv::Mat error = (p2.t() * newF * p1);
+            if (fabs(error.at<float>(0)) < threshold) {
+                // std::cout << "error: " << fabs(error.at<float>(0))  << std::endl;
+                inlierCount++;
+            }
+        }
+        if (inlierCount > maxInliers) {
+            maxInliers = inlierCount;
+            std::cout << "Max inliers: " << maxInliers << std::endl;
+            F = newF;
+            meanVar1 = meanVec1;
+            meanVar2 = meanVec2;
+            meanVar3 = meanVec3;
+            meanVar4 = meanVec4;
+
+        }
+    }
+
+    return true;
 }
 
 
