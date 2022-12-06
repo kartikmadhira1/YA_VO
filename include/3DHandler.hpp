@@ -28,13 +28,15 @@ class _3DHandler {
         void getRT(const Image &img1, const Image &img2);
         bool getFundamentalMatrix(const std::vector<Matches> &matches, cv::Mat &F);
         bool getFRANSAC(std::vector<Matches> matches, cv::Mat &F, 
-        std::pair<float, float> meanVar1, std::pair<float, float> meanVar2, 
-                                std::pair<float, float> meanVar3, std::pair<float, float> meanVar4, int iterations, double threshold);
+                      int iterations, double threshold);
         Pose disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Mat &w, cv::Mat &vt, std::vector<Matches> &matches);
+
+        cv::Mat constructNormMatrix(std::vector<double> xVec, std::vector<double> yVec, 
+                                                double xMean, double yMean);
         bool checkDepthPositive(cv::Mat &pnts3D, Pose &pose);
         float unNormalizePoint(float pt, float mean, float var);
         cv::Mat rotateMatrixZ(int rotateAngle);
-        std::pair<double, double> getMeanVar(std::vector<double> &vec);
+        double getMeanVar(std::vector<double> &vec);
 
         ~_3DHandler();
 };
