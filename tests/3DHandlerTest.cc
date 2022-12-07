@@ -121,6 +121,11 @@ TEST(_3DHandler, DrawEpilines) {
 
     handler.getFRANSAC(filterMatches, F, 200, 0.1);
     
+    // Essential matrix from fundamental matrix
+    cv::Mat E = handler.intrinsics.Left.getK().t() * F * handler.intrinsics.Left.getK();
+
+    Pose p = handler.disambiguateRT(E, filterMatches);
+
 
     // 1. Get fundamental matrix from essential matrix F = K1.inv().t() * E * K1.inv()
     // 2. Get epiline for the first image from fundamental matrix x2.t() * F = 0, x2 here is image coordinates
@@ -142,8 +147,7 @@ TEST(_3DHandler, DrawEpilines) {
         cv::Mat p1 = (cv::Mat_<double>(3, 1) << x1, y1, 1);
         cv::Mat p2 = (cv::Mat_<double>(3, 1) << x2, y2, 1);
 
-        std::cout<< "p1: " << p1 << std::endl;
-        std::cout<< "p2: " << p2 << std::endl;
+
         cv::Mat l = F.t() * p1;
 
         double a = l.at<double>(0, 0);
@@ -155,8 +159,6 @@ TEST(_3DHandler, DrawEpilines) {
 
         cv::Mat d = p2.t() * F * p1;
 
-        std::cout << "Distance: " << d << std::endl;
-        std::cout << p1Line << " " << p2Line << std::endl;
         cv::line(testImage2, p1Line, p2Line, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
 
     }

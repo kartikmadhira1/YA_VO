@@ -182,7 +182,6 @@ bool _3DHandler::getFRANSAC(std::vector<Matches> matches, cv::Mat &F, int iterat
         }
         if (inlierCount > maxInliers) {
             maxInliers = inlierCount;
-            std::cout << "Max inliers: " << maxInliers << std::endl;
             newF.copyTo(F);
         }
     }
@@ -192,7 +191,7 @@ bool _3DHandler::getFRANSAC(std::vector<Matches> matches, cv::Mat &F, int iterat
 
 
 
-Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Mat &w, cv::Mat &vt, std::vector<Matches> &matches) {
+Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches) {
 
     // Four possible solutions are possible for the essential matrix
 
@@ -204,7 +203,12 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
     //    T = U * r(90)* w * Vt
     // 4. R = U * Wt * Vt
     //    T = -U * r(90)* w * Vt
-
+    cv::SVD ESolveSVD(E, cv::SVD::FULL_UV);
+    
+    cv::Mat u = ESolveSVD.u;
+    cv::Mat vt = ESolveSVD.vt;
+    cv::Mat w = ESolveSVD.w;
+    
     cv::Mat r90 = rotateMatrixZ(90);
     cv::Mat negr90 = rotateMatrixZ(-90);
 
@@ -213,8 +217,8 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
     std::vector<cv::Point2d> cam1Pnts;
     // Get all points from matches 
     for (int i = 0; i < matches.size(); i++) {
-        cam0Pnts.push_back(cv::Point(matches[i].pt1.y, matches[i].pt1.x));
-        cam1Pnts.push_back(cv::Point(matches[i].pt2.y, matches[i].pt2.x));
+        cam0Pnts.push_back(cv::Point(matches[i].pt1.x, matches[i].pt1.y));
+        cam1Pnts.push_back(cv::Point(matches[i].pt2.x, matches[i].pt2.y));
     }
     // Placeholder for triangulated points
     cv::Mat pnts3D(4, cam0Pnts.size(), CV_64F);
@@ -241,7 +245,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
 
     cv::triangulatePoints(P1, P1, cam0Pnts, cam1Pnts, pnts3D);
 
-    if (checkDepthPositive(pnts3D, pose1)) {
+    if (checkDepthPositive(pnts3D, R1, t, pose1)) {
         poseTrain.push_back(pose1);
     }
 
@@ -262,7 +266,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
     Pose pose2(R2, t2, P2);
 
     cv::triangulatePoints(P2, P2, cam0Pnts, cam1Pnts, pnts3D);
-    if (checkDepthPositive(pnts3D, pose2)) {
+    if (checkDepthPositive(pnts3D, R2, t2,  pose2)) {
         poseTrain.push_back(pose2);
     }
 
@@ -284,7 +288,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
     Pose pose3(R3, t3, P3);
 
     cv::triangulatePoints(P3, P3, cam0Pnts, cam1Pnts, pnts3D);
-    if (checkDepthPositive(pnts3D, pose3)) {
+    if (checkDepthPositive(pnts3D, R3, t3, pose3)) {
         poseTrain.push_back(pose3);
     }
 
@@ -306,43 +310,48 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, const cv::Mat &u, const cv::Ma
     Pose pose4(R4, t4, P4);
 
     cv::triangulatePoints(P4, P4, cam0Pnts, cam1Pnts, pnts3D);
-    if (checkDepthPositive(pnts3D, pose4)) {
+    if (checkDepthPositive(pnts3D, R4, t4, pose4)) {
         poseTrain.push_back(pose4);
     }
+    
 
-    // Assert only two possible conditions where Z>0
-    assert(poseTrain.size() == 2);
-
-
-    // Choose the best pose
-    if (poseTrain[0].numChierality > poseTrain[1].numChierality) {
-        std::cout << poseTrain[0].numChierality << std::endl;
-        std::cout << poseTrain[1].numChierality << std::endl;
-
-        return poseTrain[0];
+    int maxInliers = 0;
+    Pose bestPose;
+    for (Pose &eachPose : poseTrain) {
+        if (eachPose.numChierality > maxInliers) {
+            maxInliers = eachPose.numChierality;
+            std::cout << "Max inliers: " << maxInliers << std::endl;
+            bestPose = eachPose;
+        }
     }
-    else {
-        std::cout << poseTrain[0].numChierality << std::endl;
-
-        std::cout << poseTrain[1].numChierality << std::endl;
-        return poseTrain[1];
-    }
+    return bestPose;
 }
 
 
 
-bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, Pose &pose) {
+bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose &pose) {
     // Check if the depth of the points are positive
     for (int i = 0; i < pnts3D.cols; i++) {
-        if ((pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i)) < 0) {
-            std::cout << "Depth is negative " << (pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i)) << std::endl;
-            return false;
+
+        cv::Mat r3 = R.row(2);
+
+        pnts3D.at<double>(0, i) = pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i);
+        pnts3D.at<double>(1, i) = pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i);
+        pnts3D.at<double>(2, i) = pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i);
+
+        cv::Mat X = (cv::Mat_<double>(3, 1) << pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
+
+
+        cv::Mat p3 = r3*(X - t);
+        if ( p3.at<double>(0) < 0) {
+            continue;
         } else {
-            pnts3D.at<double>(0, i) = (pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i));
-            pnts3D.at<double>(1, i) = (pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i));
-            pnts3D.at<double>(2, i) = (pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i));
+           
             pose.numChierality++;
         }
+    }
+    if (pose.numChierality == 0) {
+        return false;
     }
     return true;
 }
