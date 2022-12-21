@@ -253,6 +253,8 @@ public:
   }
 
   /// left multiplication on SE3
+  // Vertex update function: oplusImpl. We know that the most important thing in the 
+  // optimization process is the calculation of incremental ∆x, and this function deals with xk+1 = xk + ∆x process.
   virtual void oplusImpl(const double *update) override {
     Eigen::Matrix<double, 6, 1> update_eigen;
     update_eigen << update[0], update[1], update[2], update[3], update[4], update[5];
@@ -269,7 +271,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   EdgeProjection(const Eigen::Vector3d &pos, const Eigen::Matrix3d &K) : _pos3d(pos), _K(K) {}
-
+  // According to the curve model, this function needs to take out the current estimated value of the vertex con- nected by the edge 
+  // and compare it with its observed value. This is consistent with the error model in the least-squares problem.
   virtual void computeError() override {
     const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
     Sophus::SE3d T = v->estimate();
@@ -277,7 +280,8 @@ public:
     pos_pixel /= pos_pixel[2];
     _error = _measurement - pos_pixel.head<2>();
   }
-
+  // The Jacobian calculation function: linearizeOplus. 
+  //In this function, we calcu- late the Jacobian of each edge relative to the vertex.
   virtual void linearizeOplus() override {
     const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
     Sophus::SE3d T = v->estimate();
