@@ -12,12 +12,16 @@
 
 using namespace std;
 
+
+
+
 // Eigen::aligned_allocator is used to allocate memory for Eigen objects.
 typedef vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> VecVector2d;
 typedef vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VecVector3d;
 
 /*
 
+Part of Slambook2 series by Gaoxiang Zhang www.github.com/gaoxiang12/slambook2
 Non-linear least squares (reprojection error) as a graph optimization problem.
 vertices -> camera pose
 edges -> reprojection error
@@ -93,8 +97,8 @@ private:
 
 
 class Optimizer {
-
-    void partialBA(const vector<Point3i> &points3D, const vector<Point2i> &points2D, const Mat &K, Sophus::SE3d &pose);
-    void convertToEigen(const vector<Point3i> &points3D, const vector<Point2i> &points2D, VecVector2d &points2Deigen, VecVector3d &points3Deigen);
+  public:
+    void partialBA(const vector<cv::Point3d> &points3D, const vector<cv::Point2d> &points2D, const cv::Mat &K, Sophus::SE3d &pose);
+    void convertToEigen(const vector<cv::Point3d> &points3D, const vector<cv::Point2d> &points2D, VecVector2d &points2Deigen, VecVector3d &points3Deigen);
 
 };

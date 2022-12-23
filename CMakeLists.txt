@@ -67,8 +67,26 @@ add_executable(
 )
 target_link_libraries(
   UtilsTest
-  GTest::gtest_main ${OpenCV_LIBS} ${Boost_LIBRARIES}
+  GTest::gtest_main ${Boost_LIBRARIES} ${OpenCV_LIBS}
 )
+
+add_executable(
+  OptimizerTest
+  tests/OptimizerTest.cc src/Optimizer.cc src/3DHandler.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc
+)
+target_link_libraries(
+  OptimizerTest
+  GTest::gtest_main ${Boost_LIBRARIES} ${OpenCV_LIBS}
+  Sophus::Sophus jsoncpp_lib 
+  g2o_core g2o_stuff cholmod  g2o_types_sba
+  g2o_types_sim3
+  g2o_types_slam2d
+  g2o_types_slam3d g2o_types_icp
+  glog::glog
+)
+
+
+
 
 add_executable(
   ImageTest

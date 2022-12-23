@@ -8,6 +8,8 @@ struct Pose {
         cv::Mat R;
         cv::Mat t;
         cv::Mat P;
+        cv::Mat _3DPts;
+        cv::Mat _2DPts;
         int numChierality = 0;
         Pose(cv::Mat R, cv::Mat t, cv::Mat P) {
             this->R = R;

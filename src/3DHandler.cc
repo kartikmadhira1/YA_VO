@@ -208,7 +208,10 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     cv::Mat u = ESolveSVD.u;
     cv::Mat vt = ESolveSVD.vt;
     cv::Mat w = ESolveSVD.w;
-    
+    cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, 0,
+                                            0, 1, 0, 0,
+                                            0, 0, 1, 0);
+    P0 = intrinsics.Left.getK() * P0;
     cv::Mat r90 = rotateMatrixZ(90);
     cv::Mat negr90 = rotateMatrixZ(-90);
 
@@ -219,6 +222,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     for (int i = 0; i < matches.size(); i++) {
         cam0Pnts.push_back(cv::Point(matches[i].pt1.x, matches[i].pt1.y));
         cam1Pnts.push_back(cv::Point(matches[i].pt2.x, matches[i].pt2.y));
+        std::cout << cam0Pnts[i] << "<---left right--->" << cam1Pnts[i] << std::endl;
     }
     // Placeholder for triangulated points
     cv::Mat pnts3D(4, cam0Pnts.size(), CV_64F);
@@ -243,8 +247,8 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     // Encapsulate in a Pose struct
     Pose pose1(R1, t, P1);
 
-    cv::triangulatePoints(P1, P1, cam0Pnts, cam1Pnts, pnts3D);
-
+    cv::triangulatePoints(P0, P1, cam0Pnts, cam1Pnts, pnts3D);
+    pnts3D.copyTo(pose1._3DPts);
     if (checkDepthPositive(pnts3D, R1, t, pose1)) {
         poseTrain.push_back(pose1);
     }
@@ -265,7 +269,9 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     Pose pose2(R2, t2, P2);
 
-    cv::triangulatePoints(P2, P2, cam0Pnts, cam1Pnts, pnts3D);
+    cv::triangulatePoints(P0, P2, cam0Pnts, cam1Pnts, pnts3D);
+    pnts3D.copyTo(pose2._3DPts);
+
     if (checkDepthPositive(pnts3D, R2, t2,  pose2)) {
         poseTrain.push_back(pose2);
     }
@@ -287,7 +293,8 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     Pose pose3(R3, t3, P3);
 
-    cv::triangulatePoints(P3, P3, cam0Pnts, cam1Pnts, pnts3D);
+    cv::triangulatePoints(P0, P3, cam0Pnts, cam1Pnts, pnts3D);
+    pnts3D.copyTo(pose3._3DPts);
     if (checkDepthPositive(pnts3D, R3, t3, pose3)) {
         poseTrain.push_back(pose3);
     }
@@ -309,7 +316,8 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     P4 = P4/P4.at<double>(2, 3);
     Pose pose4(R4, t4, P4);
 
-    cv::triangulatePoints(P4, P4, cam0Pnts, cam1Pnts, pnts3D);
+    cv::triangulatePoints(P0, P4, cam0Pnts, cam1Pnts, pnts3D);
+    pnts3D.copyTo(pose4._3DPts);
     if (checkDepthPositive(pnts3D, R4, t4, pose4)) {
         poseTrain.push_back(pose4);
     }
@@ -331,15 +339,14 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose &pose) {
     // Check if the depth of the points are positive
     for (int i = 0; i < pnts3D.cols; i++) {
-
         cv::Mat r3 = R.row(2);
-
         pnts3D.at<double>(0, i) = pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i);
         pnts3D.at<double>(1, i) = pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i);
         pnts3D.at<double>(2, i) = pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i);
 
         cv::Mat X = (cv::Mat_<double>(3, 1) << pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
 
+        std::cout << pnts3D.at<double>(0, i) << " " << pnts3D.at<double>(1, i) << " " << pnts3D.at<double>(2, i) << std::endl;
 
         cv::Mat p3 = r3*(X - t);
         if ( p3.at<double>(0) < 0) {

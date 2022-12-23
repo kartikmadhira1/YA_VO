@@ -2,13 +2,7 @@
 
 
 
-
-Optimizer::Optimizer() {
-    // TODO Auto-generated constructor stub
-
-}   
-
-Optimizer::convertToEigen(const vector<cv::Point3i> &points3D, const vector<cv::Point2i> &points2D, 
+void Optimizer::convertToEigen(const vector<cv::Point3d> &points3D, const vector<cv::Point2d> &points2D, 
                             VecVector2d &points2Deigen, VecVector3d &points3Deigen) {
     for (int i = 0; i < points3D.size(); i++) {
         Eigen::Vector3d point3d;
@@ -20,13 +14,13 @@ Optimizer::convertToEigen(const vector<cv::Point3i> &points3D, const vector<cv::
     }
 }
 
-Optimizer::partialBA(const vector<cv::Point3i> &points3D, const vector<cv::Point2i> &points2D, const Mat &K, Sophus::SE3d &pose) {
+void Optimizer::partialBA(const vector<cv::Point3d> &points3D, const vector<cv::Point2d> &points2D, const cv::Mat &K, Sophus::SE3d &pose) {
     
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;  // pose is 6, landmark is 3
     typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
 
     // Construct optimzation algorithm
-    auto solver = new g2o::OptimizationAlgorithmLevenberg(g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
+    auto solver = new g2o::OptimizationAlgorithmGaussNewton(g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
 
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
