@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(sfm-cpp)
 set(CMAKE_CXX_STANDARD 14)
 # opencv dependencies
-set(OpenCV_DIR /usr/share/OpenCV)
+# set(OpenCV_DIR /usr/share/OpenCV)
 find_package(OpenCV REQUIRED)
 include_directories(( ${OpenCV_INCLUDE_DIRS}))
 
@@ -17,11 +17,12 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-LIST(APPEND CMAKE_MODULE_PATH /home/kartik/g2o/cmake_modules)
-set(G2O_DIR /home/kartik/g2o/cmake_modules)
+# LIST(APPEND CMAKE_MODULE_PATH /home/kartik/g2o/cmake_modules)
+set(G2O_DIR /Users/kartikmadhira/g2o/cmake_modules)
 find_package(G2O REQUIRED)
 
-#find_package(Boost REQUIRED COMPONENTS thread)
+
+find_package(Boost REQUIRED COMPONENTS thread)
 #INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
 
 find_package(jsoncpp REQUIRED)
@@ -29,6 +30,7 @@ find_package(Boost 1.3 COMPONENTS filesystem)
 find_package(Eigen3 3.3 REQUIRED)
 find_package(Sophus REQUIRED)
 
+include_directories(${G2O_INCLUDE_DIR})
 
 add_definitions("-D SOPHUS_USE_BASIC_LOGGING")
 if (TARGET Eigen3::Eigen)
@@ -41,8 +43,78 @@ include_directories(${Boost_INCLUDE_DIRS} ${G2O_INCLUDE_DIRS} ${Sophus_INCLUDE_D
 find_package (glog 0.6.0 REQUIRED)
 
 
+IF (G2O_INCLUDE_DIR)
+    MESSAGE(STATUS "Found g2o headers in: ${G2O_INCLUDE_DIR}")
+  ENDIF (G2O_INCLUDE_DIR)
+
+  FIND_LIBRARY(G2O_CORE_LIB             
+    NAMES g2o_core 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_STUFF_LIB            
+    NAMES g2o_stuff 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_TYPES_SLAM3D_LIB     
+    NAMES g2o_types_slam3d 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_SOLVER_CHOLMOD_LIB   
+    NAMES g2o_solver_cholmod 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_SOLVER_PCG_LIB       
+    NAMES g2o_solver_pcg 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_SOLVER_CSPARSE_LIB   
+    NAMES g2o_solver_csparse 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_INCREMENTAL_LIB      
+    NAMES g2o_incremental 
+    PATHS /usr/local /usr 
+    PATH_SUFFIXES lib)
+  FIND_LIBRARY(G2O_CSPARSE_EXTENSION_LIB
+    NAMES g2o_csparse_extension
+    PATHS /usr/local /usr
+    PATH_SUFFIXES lib)
+
+  SET(G2O_LIBRARIES ${G2O_CSPARSE_EXTENSION_LIB}
+                    ${G2O_CORE_LIB}           
+                    ${G2O_STUFF_LIB}          
+                    ${G2O_TYPES_SLAM3D_LIB}   
+                    ${G2O_SOLVER_CHOLMOD_LIB} 
+                    ${G2O_SOLVER_PCG_LIB}     
+                    ${G2O_SOLVER_CSPARSE_LIB} 
+                    ${G2O_INCREMENTAL_LIB}                        
+                    )
+ 
+  IF(G2O_LIBRARIES AND G2O_INCLUDE_DIR)
+    SET(G2O_FOUND "YES")
+    IF(NOT G2O_FIND_QUIETLY)
+      MESSAGE(STATUS "Found libg2o: ${G2O_LIBRARIES}")
+    ENDIF(NOT G2O_FIND_QUIETLY)
+  ELSE(G2O_LIBRARIES AND G2O_INCLUDE_DIR)
+    IF(NOT G2O_LIBRARIES)
+      IF(G2O_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find libg2o!")
+      ENDIF(G2O_FIND_REQUIRED)
+    ENDIF(NOT G2O_LIBRARIES)
+
+    IF(NOT G2O_INCLUDE_DIR)
+      IF(G2O_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find g2o include directory!")
+      ENDIF(G2O_FIND_REQUIRED)
+    ENDIF(NOT G2O_INCLUDE_DIR)
+  ENDIF(G2O_LIBRARIES AND G2O_INCLUDE_DIR)
+
+
+
+
+
 add_executable(sfm-cpp src/temp.cc src/Utils.cc src/Image.cc src/BriefDescriptor.cc src/LoopHandler.cc src/FastDetector.cc src/3DHandler.cc)
-target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES} Sophus::Sophus)
+target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES})
 # get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
 add_executable(
@@ -51,10 +123,7 @@ add_executable(
 )
 
 
-target_link_libraries(g2otest g2o_core g2o_stuff cholmod  g2o_types_sba
-g2o_types_sim3
-g2o_types_slam2d
-g2o_types_slam3d g2o_types_icp ${CHOLMOD_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} glog::glog)
+target_link_libraries(g2otest ${G2O_CORE_LIBRARY} ${G2O_STUFF_LIB} ${G2O_STUFF_LIBRARY} ${G2O_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} glog::glog)
 
 # Link CHOLMOD if available, CSparse otherwise
 
@@ -77,11 +146,8 @@ add_executable(
 target_link_libraries(
   OptimizerTest
   GTest::gtest_main ${Boost_LIBRARIES} ${OpenCV_LIBS}
-  Sophus::Sophus jsoncpp_lib 
-  g2o_core g2o_stuff cholmod  g2o_types_sba
-  g2o_types_sim3
-  g2o_types_slam2d
-  g2o_types_slam3d g2o_types_icp
+  jsoncpp_lib 
+  ${G2O_CORE_LIBRARY} ${G2O_STUFF_LIB} ${G2O_STUFF_LIBRARY} ${G2O_LIBRARIES} 
   glog::glog
 )
 
@@ -138,4 +204,3 @@ target_link_libraries(
 
 
 include(GoogleTest)
-gtest_discover_tests(UtilsTest LoopHandlerTest FastDetectorTest ImageTest BriefDescriptorTest 3DHandlerTest)
