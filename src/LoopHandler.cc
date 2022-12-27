@@ -68,4 +68,33 @@ int LoopHandler::getLeftTrainLength() {
 }
 
 
+void LoopHandler::takeVOStep() {
+    // Get the next image 
+    Frame::ptr frame = getNextFrame();
+    if (frame != nullptr) {
+        // Get features
+        getFeatures(frame);
+        // Add frame to pipeline
+        addFrame(frame);
+    }
+
+
+
+}
+
+
+Frame::ptr LoopHandler::getNextFrame() {
+    if (_trainIterator != leftPathTrain.end()) {
+        cv::Mat img = cv::imread(*_trainIterator);
+        _trainIterator++;
+        Frame::ptr frame = std::make_shared<Frame>(img);    
+        return frame;
+    }
+    return nullptr;
+}
+
+
+
+
+
 LoopHandler::~LoopHandler() {}
