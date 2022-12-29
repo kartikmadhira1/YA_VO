@@ -4,6 +4,7 @@
 #include <json/json.h>
 #include "Utils.hpp"
 #include "Frame.hpp"
+#include "Map.hpp"
 #include "BriefDescriptor.hpp"
 #include "FastDetector.hpp"
 #include "3DHandler.hpp"
@@ -28,12 +29,13 @@ class LoopHandler {
         void generatePathTrain();
         Frame::ptr currentFrame = nullptr;
         Frame::ptr lastFrame = nullptr;
-        voStatus status = voStatus::INIT;
         std::vector<std::string>::iterator _trainIterator;
+        voStatus status = voStatus::INIT;
         int currentFrameId;
     public:
         LoopHandler();
         LoopHandler(const std::string &config);
+        Map map;
         Brief brief;
         FastDetector fd;
         std::vector<std::string> leftPathTrain;
@@ -50,11 +52,10 @@ class LoopHandler {
         // adds frame and passes onto other modules based on the status
         void addFrame(Frame::ptr _frame);
         // build initial map with current frame and last frame;
-        void buildInitMap();
+        bool buildInitMap();
+        // run VO
+        void runVO();
 
-        
-        
-       
         std::string getSeqNo();
         bool stereoStatus();
         std::string getLeftImagesPath();

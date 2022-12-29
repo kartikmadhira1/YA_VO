@@ -1,6 +1,7 @@
 #include "../include/Optimizer.hpp"
 #include "../include/3DHandler.hpp"
 #include "../include/LoopHandler.hpp"
+#include "../include/Frame.hpp"
 #include "../include/FastDetector.hpp"
 #include <gtest/gtest.h>
 

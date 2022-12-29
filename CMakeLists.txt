@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 # set(OpenCV_DIR /usr/share/OpenCV)
 find_package(OpenCV REQUIRED)
 include_directories(( ${OpenCV_INCLUDE_DIRS}))
+add_definitions(-DOPENCV_DISABLE_EIGEN_TENSOR_SUPPORT)
 
 #adding googletest
 
@@ -177,7 +178,7 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
 )
 target_link_libraries(
   LoopHandlerTest

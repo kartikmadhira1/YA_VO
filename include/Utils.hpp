@@ -6,13 +6,18 @@
 #include <sstream>
 #include <string>
 #include <ctype.h>
+#include <mutex>
+#include <sophus/se3.hpp>
+#include <Eigen/Core>
 #include <boost/filesystem.hpp>
 #include "opencv4/opencv2/core.hpp"
 #include "opencv4/opencv2/imgproc/imgproc.hpp"
 #include "opencv4/opencv2/highgui/highgui.hpp"
+#include <opencv2/core/eigen.hpp>
 
 
-
+// common typedefs
+typedef Eigen::Matrix<double, 3, 1> Vec3;
 
 
 struct Camera {

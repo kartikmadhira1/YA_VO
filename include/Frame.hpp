@@ -14,7 +14,14 @@ class Frame : public Image {
         Sophus::SE3d pose;
         std::vector<std::shared_ptr<Feature>> features;
         Frame() {}
-        Frame(const cv::Mat &img, unsigned long _frameID) : Image(img), frameID(_frameID) {}
+        Frame(const cv::Mat &img, unsigned long _frameID) : Image(img), frameID(_frameID) {
+            Eigen::Matrix<double, 3, 3> R;
+            R << 1,0,0,0,1,0,0,0,1;
+            Eigen::Matrix<double, 3, 1> t;
+            t  << 0, 0, 0;
+            Sophus::SE3d identPose(R, t);
+            this->pose = identPose;
+        }
         void setPose(Sophus::SE3d &pose_);
         Sophus::SE3d getPose();
         static std::shared_ptr<Frame> CreateFrame();

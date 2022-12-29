@@ -76,6 +76,7 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
         currentFrame = _frame;
         if (lastFrame != nullptr) {
             buildInitMap();
+            std::cout << "Built initial map" << std::endl;
         }
     } 
     lastFrame = currentFrame;
@@ -111,30 +112,26 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
 }
 
 
-void LoopHandler::buildInitMap() {
+void LoopHandler::runVO() {
+    takeVOStep();
+    takeVOStep();
+}
+
+bool LoopHandler::buildInitMap() {
 
     std::vector<Matches> matches = brief.matchFeatures(*currentFrame, *lastFrame);
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
-
-
-    handler3D.intrinsics.Left.printK();
     cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
-    cv::Mat u = cv::Mat::zeros(3, 3, CV_64F);
-    cv::Mat vt = cv::Mat::zeros(3, 3, CV_64F);
-    cv::Mat w = cv::Mat::zeros(3, 3, CV_64F);
-
-    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);
-    
+    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
     // Essential matrix from fundamental matrix
     cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
-
-
+    // Get the pose of the second camera
     Pose p = handler3D.disambiguateRT(E, filterMatches);
-
-
-
+    // insert this pose in the current frame 
+    currentFrame->setPose(p.sophusPose);
+    return true;
 }
 
 
