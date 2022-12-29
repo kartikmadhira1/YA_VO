@@ -10,6 +10,8 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     Json::Value value;
     reader.parse(ifs, value);
     std::string basePath = value["basePath"].asString();
+    std::string calibPath = basePath + "calib.txt";
+    handler3D.setCalibParams(calibPath);
     seqNo = value["sequence"].asString();
     std::string camType = value["cameraType"].asString();
     if (camType == "mono") {
@@ -72,14 +74,11 @@ int LoopHandler::getLeftTrainLength() {
 void LoopHandler::addFrame(Frame::ptr _frame) {
     if (status == voStatus::INIT) {
         currentFrame = _frame;
-        status = voStatus::TRACKING;
-    } else if (status == voStatus::TRACKING) {
-        lastFrame = currentFrame;
-        currentFrame = _frame;
-        buildInitMap();
-    } else if (status == voStatus::ERROR) {
-
-    }
+        if (lastFrame != nullptr) {
+            buildInitMap();
+        }
+    } 
+    lastFrame = currentFrame;
 }
 
 bool LoopHandler::takeVOStep() {
@@ -106,13 +105,35 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
     brief.computeBrief(features, *_frame);
     // Add features to frame
     for (auto &eachFeature : features) {
-        Feature feat = std::make_shared<Feature>(_frame, cv::Point2i(eachFeature->x, eachFeature->y);
+        Feature::ptr feat = std::make_shared<Feature>(_frame, cv::Point2i(eachFeature.x, eachFeature.y));
         _frame->features.push_back(feat);
     }
 }
 
 
 void LoopHandler::buildInitMap() {
+
+    std::vector<Matches> matches = brief.matchFeatures(*currentFrame, *lastFrame);
+    std::vector<Matches> filterMatches;
+
+    brief.removeOutliers(matches, filterMatches, 20.0);
+
+
+    handler3D.intrinsics.Left.printK();
+    cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
+    cv::Mat u = cv::Mat::zeros(3, 3, CV_64F);
+    cv::Mat vt = cv::Mat::zeros(3, 3, CV_64F);
+    cv::Mat w = cv::Mat::zeros(3, 3, CV_64F);
+
+    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);
+    
+    // Essential matrix from fundamental matrix
+    cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
+
+
+    Pose p = handler3D.disambiguateRT(E, filterMatches);
+
+
 
 }
 

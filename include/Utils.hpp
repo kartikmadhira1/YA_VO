@@ -60,6 +60,7 @@ struct Intrinsics {
         Intrinsics() {
 
         }
+        typedef std::shared_ptr<Intrinsics> ptr;
         Camera Left;
         Camera Right;
 

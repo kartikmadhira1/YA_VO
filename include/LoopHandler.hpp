@@ -6,6 +6,7 @@
 #include "Frame.hpp"
 #include "BriefDescriptor.hpp"
 #include "FastDetector.hpp"
+#include "3DHandler.hpp"
 /*
 1. Load config file - what sequence, base path, etc.
 2. iterate through images
@@ -38,6 +39,8 @@ class LoopHandler {
         std::vector<std::string> leftPathTrain;
         std::vector<std::string> rightPathTrain;
 
+
+        _3DHandler handler3D;
         // Gather an image from the path train
         Frame::ptr getNextFrame();
         // takes a single step of adding a frame to the pipeline

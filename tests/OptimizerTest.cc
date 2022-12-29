@@ -42,7 +42,9 @@ TEST(Optimizer, checkPartialBA) {
     std::cout << filterMatches.size() << std::endl;
     cv::Mat sideBySide = brief.drawMatches(testObj1, testObj2, filterMatches);
 
-    _3DHandler handler("../tests/calib.txt");
+    _3DHandler handler;
+    std::string calibPath = "../tests/calib.txt";
+    handler.setCalibParams(calibPath);
 
     handler.intrinsics.Left.printK();
     cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);

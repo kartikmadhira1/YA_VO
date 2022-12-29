@@ -43,13 +43,22 @@ TEST(LoopHandler, checkFrameIDs) {
 }
 
 
-TEST(LoopHandler, checkFeatureExtraction) {
+// TEST(LoopHandler, checkFeatureExtraction) {
+//     std::string configPath = "../config/KITTI_mock_test.json";
+//     LoopHandler Lh(configPath);
+//     auto nextFrame = Lh.getNextFrame();
+//     FastDetector fd(12, 50);
+//     Brief brief(256);
+//     auto features = fd.getFastFeatures(*nextFrame);
+//     brief.computeBrief(features, *nextFrame);
+//     EXPECT_EQ(features.size(), 70);
+// }
+
+
+TEST(LoopHandler, checkFeatureInsertion) {
     std::string configPath = "../config/KITTI_mock_test.json";
     LoopHandler Lh(configPath);
-    auto nextFrame = Lh.getNextFrame();
-    FastDetector fd(12, 50);
-    Brief brief(256);
-    auto features = fd.getFastFeatures(*nextFrame);
-    brief.computeBrief(features, *nextFrame);
-    EXPECT_EQ(features.size(), 70);
+    Frame::ptr nextFrame = Lh.getNextFrame();
+    Lh.insertFrameFeatures(nextFrame);
+    EXPECT_EQ(nextFrame->features.size(), 70);
 }

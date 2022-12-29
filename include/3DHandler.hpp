@@ -34,8 +34,10 @@ struct Pose {
 class _3DHandler {
     private:
     public:
-        _3DHandler(std::string calibPath);
+        _3DHandler();
         Intrinsics intrinsics;
+
+        void setCalibParams(std::string &calibFile);
 
         // need to have these functions usable without instantiating the class
         void getRT(const Image &img1, const Image &img2);

@@ -3,11 +3,15 @@
 
 
 
-_3DHandler::_3DHandler(std::string calibPath) {
-    getCalibParams(calibPath, intrinsics);
+_3DHandler::_3DHandler() {
+
 }
 
 
+void _3DHandler::setCalibParams(std::string &calibFile) {
+    
+    getCalibParams(calibFile, this->intrinsics);
+}
 
 double _3DHandler::getMeanVar(std::vector<double> &vec) {
     double mean = 0.0;

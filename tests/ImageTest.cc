@@ -2,7 +2,6 @@
 #include "../include/Image.hpp"
 #include "../include/LoopHandler.hpp"
 #include "../include/FastDetector.hpp"
-#include "../include/FastDetector.hpp"
 // #include "../include/LoopHandler.hpp"
 // Test getPixel method 
 

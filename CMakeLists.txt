@@ -156,7 +156,7 @@ target_link_libraries(
 
 add_executable(
   ImageTest
-  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc
+  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc
 )
 target_link_libraries(
   ImageTest
@@ -165,7 +165,7 @@ target_link_libraries(
 
 add_executable(
   BriefDescriptorTest
-  tests/BriefDescriptorTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc
+  tests/BriefDescriptorTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc
 )
 target_link_libraries(
   BriefDescriptorTest
@@ -186,7 +186,7 @@ target_link_libraries(
 
 add_executable(
   FastDetectorTest
-  tests/FastDetectorTest.cc src/Utils.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc
+  tests/FastDetectorTest.cc src/Utils.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc src/3DHandler.cc
 )
 target_link_libraries(
   FastDetectorTest
