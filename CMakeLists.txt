@@ -113,7 +113,7 @@ IF (G2O_INCLUDE_DIR)
 
 
 
-add_executable(sfm-cpp src/temp.cc src/Utils.cc src/Image.cc src/BriefDescriptor.cc src/LoopHandler.cc src/FastDetector.cc src/3DHandler.cc)
+add_executable(sfm-cpp src/temp.cc src/Utils.cc src/Image.cc src/BriefDescriptor.cc  src/FastDetector.cc src/3DHandler.cc)
 target_link_libraries(sfm-cpp ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES})
 # get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -156,7 +156,7 @@ target_link_libraries(
 
 add_executable(
   ImageTest
-  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc
+  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc
 )
 target_link_libraries(
   ImageTest
@@ -177,7 +177,7 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
 )
 target_link_libraries(
   LoopHandlerTest
@@ -186,7 +186,7 @@ target_link_libraries(
 
 add_executable(
   FastDetectorTest
-  tests/FastDetectorTest.cc src/Utils.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc
+  tests/FastDetectorTest.cc src/Utils.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc
 )
 target_link_libraries(
   FastDetectorTest

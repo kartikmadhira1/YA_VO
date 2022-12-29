@@ -4,7 +4,7 @@ LoopHandler::LoopHandler() {
 
 }
 
-LoopHandler::LoopHandler(const std::string &config) {
+LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     std::ifstream ifs(config);
     Json::Reader reader;
     Json::Value value;
@@ -21,6 +21,7 @@ LoopHandler::LoopHandler(const std::string &config) {
         rightImagesPath = basePath + seqNo + "/image_1/";
     }
     generatePathTrain();
+    _trainIterator = leftPathTrain.begin();
 }
 
 
@@ -68,14 +69,28 @@ int LoopHandler::getLeftTrainLength() {
 }
 
 
-void LoopHandler::takeVOStep() {
+void LoopHandler::addFrame(Frame::ptr _frame) {
+    if (status == voStatus::INIT) {
+        currentFrame = _frame;
+        status = voStatus::TRACKING;
+    } else if (status == voStatus::TRACKING) {
+        lastFrame = currentFrame;
+        currentFrame = _frame;
+        buildInitMap();
+    } else if (status == voStatus::ERROR) {
+
+    }
+}
+
+bool LoopHandler::takeVOStep() {
     // Get the next image 
     Frame::ptr frame = getNextFrame();
     if (frame != nullptr) {
         // Get features
-        getFeatures(frame);
+        insertFrameFeatures(frame);
         // Add frame to pipeline
         addFrame(frame);
+        return true;
     }
 
 
@@ -83,11 +98,32 @@ void LoopHandler::takeVOStep() {
 }
 
 
+
+void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
+    // Get FAST features and have keypoints acc. to harris responses
+    auto features = fd.getFastFeatures(*_frame);
+    // Compute BRIEF features
+    brief.computeBrief(features, *_frame);
+    // Add features to frame
+    for (auto &eachFeature : features) {
+        Feature feat = std::make_shared<Feature>(_frame, cv::Point2i(eachFeature->x, eachFeature->y);
+        _frame->features.push_back(feat);
+    }
+}
+
+
+void LoopHandler::buildInitMap() {
+
+}
+
+
 Frame::ptr LoopHandler::getNextFrame() {
     if (_trainIterator != leftPathTrain.end()) {
-        cv::Mat img = cv::imread(*_trainIterator);
+        cv::Mat img = cv::imread(*_trainIterator, 0);
+        currentFrameId = _trainIterator - leftPathTrain.begin();
         _trainIterator++;
-        Frame::ptr frame = std::make_shared<Frame>(img);    
+        // ADD FRAME ID TO FRAME!!!!!!!!!!!!!-----------------
+        Frame::ptr frame = std::make_shared<Frame>(img, currentFrameId);    
         return frame;
     }
     return nullptr;

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <fstream>
 #include <iostream>
@@ -79,3 +80,6 @@ std::vector<boost::filesystem::path> getFilesInFolder(const std::string &path);
 
 
 std::string type2str(int type);
+
+
+#endif // TODOITEM_H

@@ -5,7 +5,6 @@
  * 
  * @param img Mat object acquired
  */
-
 Image::Image(const cv::Mat &img) {
    rawImage = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
    img.copyTo(this->rawImage);
@@ -26,3 +25,5 @@ int Image::getW() const {
    return this->rawImage.cols;
 }
 
+Image::~Image() {
+}

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FAST_DETECTOR_H
+#define FAST_DETECTOR_H
+
 #include <iostream>
 #include <set>
 #include "Utils.hpp"
@@ -28,11 +30,14 @@ class FastDetector {
         int harrisThreshold;
 
     public :
-        FastDetector(int minDetectionThresold=12, uint8_t intensityThreshold=50) {
-            this->minDetectionThreshold=12;
+        FastDetector() {
+
+        }
+        FastDetector(int _minDetectionThresold, uint8_t _intensityThreshold) {
+            this->minDetectionThreshold=_minDetectionThresold;
             this->bresRadius=3;
-            this->intensityThreshold=120;
-            this->fastCornerNumThreshold=100;
+            this->intensityThreshold=_intensityThreshold;
+            this->fastCornerNumThreshold=70;
             this->harrisThreshold=2;
         }
         void putPixelColor(Image &img, cv::Point pt);
@@ -51,3 +56,5 @@ class FastDetector {
         ~FastDetector() {
         }
 };
+
+#endif // TODOITEM_H

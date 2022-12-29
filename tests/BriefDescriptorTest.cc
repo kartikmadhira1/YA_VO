@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../include/BriefDescriptor.hpp"
+#include "../include/LoopHandler.hpp"
 #include "../include/FastDetector.hpp"
 // Test getPixel method 
 

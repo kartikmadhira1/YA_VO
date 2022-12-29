@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IMAGE_H
+#define IMAGE_H
 #include "BriefDescriptor.hpp"
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/xfeatures2d/cuda.hpp>
@@ -13,6 +14,7 @@ class KeyPoint;
 class Image {
 
     public :
+        Image() {}
         Image(const cv::Mat &img);
         cv::Mat rawImage;
         std::vector<KeyPoint> keypoints;
@@ -20,5 +22,6 @@ class Image {
         int getH() const;
         void unDistort();
         uint8_t getPixelVal(int i, int j) const ;
-        
+        ~Image();
 };
+#endif // TODOITEM_H

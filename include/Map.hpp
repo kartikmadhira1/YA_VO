@@ -1,5 +1,5 @@
-#pragma once
-
+#ifndef MAP_H
+#define MAP_H
 
 #include <unordered_map>
 #include "Frame.hpp"
@@ -31,5 +31,6 @@ class Map {
 
         Frame::Ptr currentFrame = nullptr;
 
-}
+};
 
+#endif // TODOITEM_H

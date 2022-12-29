@@ -1,3 +1,6 @@
+#ifndef OPTIMIZER_H
+#define OPTIMIZER_H
+
 #include <Eigen/Core>
 #include <g2o/core/base_vertex.h>
 #include <g2o/core/base_unary_edge.h>
@@ -8,7 +11,7 @@
 #include <g2o/solvers/dense/linear_solver_dense.h>
 #include <sophus/se3.hpp>
 #include <iostream>
-#include "../include/Image.hpp"
+#include "Image.hpp"
 
 using namespace std;
 
@@ -102,3 +105,5 @@ class Optimizer {
     void convertToEigen(const vector<cv::Point3d> &points3D, const vector<cv::Point2d> &points2D, VecVector2d &points2Deigen, VecVector3d &points3Deigen);
 
 };
+
+#endif // TODOITEM_H

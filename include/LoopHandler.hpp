@@ -1,16 +1,20 @@
+#ifndef LOOPHANDLER_H
+#define LOOPHANDLER_H
 #include <fstream>
 #include <json/json.h>
 #include "Utils.hpp"
 #include "Frame.hpp"
+#include "BriefDescriptor.hpp"
+#include "FastDetector.hpp"
 /*
 1. Load config file - what sequence, base path, etc.
 2. iterate through images
 3.  Need methods like next() and iter() for image iteration -> this should be different class or should be in LoopHandler?
 */
-class Image;
+
 // enum sensorType {stereo, mono}
 
-enum voStatus {INIT, TRACKING, ERROR}
+enum voStatus {INIT, TRACKING, ERROR};
 
 
 
@@ -24,17 +28,22 @@ class LoopHandler {
         Frame::ptr currentFrame = nullptr;
         Frame::ptr lastFrame = nullptr;
         voStatus status = voStatus::INIT;
-        auto _trainIterator = leftPathTrain.begin();
+        std::vector<std::string>::iterator _trainIterator;
+        int currentFrameId;
     public:
+        LoopHandler();
+        LoopHandler(const std::string &config);
+        Brief brief;
+        FastDetector fd;
         std::vector<std::string> leftPathTrain;
         std::vector<std::string> rightPathTrain;
 
         // Gather an image from the path train
         Frame::ptr getNextFrame();
         // takes a single step of adding a frame to the pipeline
-        void takeVOStep();
+        bool takeVOStep();
         //prepare a frame with it's keypoints
-        void getFeatures( Frame::ptr _frame);
+        void insertFrameFeatures( Frame::ptr _frame);
         // adds frame and passes onto other modules based on the status
         void addFrame(Frame::ptr _frame);
         // build initial map with current frame and last frame;
@@ -42,8 +51,7 @@ class LoopHandler {
 
         
         
-        LoopHandler();
-        LoopHandler(const std::string &config);
+       
         std::string getSeqNo();
         bool stereoStatus();
         std::string getLeftImagesPath();
@@ -65,3 +73,4 @@ Lets make the easiest case for a feasable output
 
 
 */
+#endif // TODOITEM_H

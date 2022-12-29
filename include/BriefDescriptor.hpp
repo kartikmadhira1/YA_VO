@@ -1,9 +1,13 @@
-#pragma once
-#include "LoopHandler.hpp"
+#ifndef BRIEF_DESCRIPTOR_H
+#define BRIEF_DESCRIPTOR_H
+
+
 #include "Image.hpp"
-#include "FastDetector.hpp"
 #include <random>
 #include <algorithm>
+#include "Utils.hpp"
+class Image;
+
 class KeyPoint {
     public:
         KeyPoint(const int _x, const int _y, const int _id) {
@@ -41,7 +45,7 @@ class Brief {
         std::vector<std::vector<int>> offsets;
     public:
         std::vector<std::vector<int>> preComputeOffsets();
-
+        Brief(){}
         Brief(int numTests) {
             // Means that there will be 256 tests for the patch.
             this->offsets = this->preComputeOffsets();
@@ -62,3 +66,5 @@ class Brief {
             // std::cout << "Brief destructor called" << std::endl;
         }
 };
+
+#endif // TODOITEM_H

@@ -1,3 +1,6 @@
+#ifndef _3DHANDLER_H
+#define _3DHANDLER_H
+
 #include "Utils.hpp"
 #include "Image.hpp"
 #include "opencv2/calib3d.hpp"
@@ -50,3 +53,5 @@ class _3DHandler {
 
         ~_3DHandler();
 };
+
+#endif // TODOITEM_H
