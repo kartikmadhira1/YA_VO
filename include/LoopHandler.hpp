@@ -16,9 +16,10 @@
 
 // enum sensorType {stereo, mono}
 
+typedef std::vector<cv::Point2d> CV2DPoints;
+typedef std::vector<cv::Point3d> CV3DPoints;
+
 enum voStatus {INIT, TRACKING, ERROR};
-
-
 
 class LoopHandler {
     private:
@@ -55,7 +56,13 @@ class LoopHandler {
         bool buildInitMap();
         // run VO
         void runVO();
+        // triangulate points
+        
+        CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
+                            const std::vector<Matches> filtMatches);
 
+
+        cv::Mat sophus2ProjMat( Frame::ptr _frame);
         std::string getSeqNo();
         bool stereoStatus();
         std::string getLeftImagesPath();

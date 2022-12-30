@@ -1,6 +1,6 @@
 {
-    "basePath" : "../dataset/", 
+    "basePath" : "/Users/kartikmadhira/da-sauce/dataset/sequences/", 
     "sequence" : "00", 
-    "cameraType" : "mono",//set to stereo if used
-    "calibPath" : "calib.txt",
+    "cameraType" : "mono",
+    "calibPath" : "calib.txt"
 }

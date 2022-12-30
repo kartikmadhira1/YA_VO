@@ -55,10 +55,21 @@ TEST(LoopHandler, checkFrameIDs) {
 // }
 
 
-TEST(LoopHandler, checkFeatureInsertion) {
-    std::string configPath = "../config/KITTI_mock_test.json";
+// TEST(LoopHandler, checkFeatureInsertion) {
+//     std::string configPath = "../config/KITTI_mock_test.json";
+//     LoopHandler Lh(configPath);
+//     Frame::ptr nextFrame = Lh.getNextFrame();
+//     Lh.insertFrameFeatures(nextFrame);
+//     EXPECT_EQ(nextFrame->features.size(), 70);
+// }
+
+
+
+
+TEST(LoopHandler, checkVOStep) {
+    std::string configPath = "../config/KITTI.json";
     LoopHandler Lh(configPath);
-    Frame::ptr nextFrame = Lh.getNextFrame();
-    Lh.insertFrameFeatures(nextFrame);
-    EXPECT_EQ(nextFrame->features.size(), 70);
+    Lh.handler3D.intrinsics.Left.printK();
+
+    Lh.runVO();
 }

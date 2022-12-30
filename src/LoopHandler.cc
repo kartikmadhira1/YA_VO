@@ -10,9 +10,9 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     Json::Value value;
     reader.parse(ifs, value);
     std::string basePath = value["basePath"].asString();
-    std::string calibPath = basePath + "calib.txt";
-    handler3D.setCalibParams(calibPath);
     seqNo = value["sequence"].asString();
+    std::string calibPath = basePath  + seqNo + "/calib.txt";
+    handler3D.setCalibParams(calibPath);
     std::string camType = value["cameraType"].asString();
     if (camType == "mono") {
         isStereo = false;
@@ -24,6 +24,7 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     }
     generatePathTrain();
     _trainIterator = leftPathTrain.begin();
+
 }
 
 
@@ -75,8 +76,13 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
     if (status == voStatus::INIT) {
         currentFrame = _frame;
         if (lastFrame != nullptr) {
-            buildInitMap();
-            std::cout << "Built initial map" << std::endl;
+            bool success = buildInitMap();
+            if (success) {
+                std::cout << "Built initial map" << std::endl;
+            } else {
+                std::cout << "Something is wrong" << std::endl;
+
+            }
         }
     } 
     lastFrame = currentFrame;
@@ -129,9 +135,67 @@ bool LoopHandler::buildInitMap() {
     cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
     // Get the pose of the second camera
     Pose p = handler3D.disambiguateRT(E, filterMatches);
-    // insert this pose in the current frame 
     currentFrame->setPose(p.sophusPose);
+
+    // insert current and last frame into the map
+    map.insertKeyFrame(lastFrame);
+    map.insertKeyFrame(currentFrame);
+
+    //triangulate based on the last and currentFrame
+
     return true;
+}
+
+
+CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
+                                                    const std::vector<Matches> filtMatches) {
+    
+    CV2DPoints lastFramePts;
+    CV2DPoints currFramePts;
+   
+    for (int i = 0; i < filtMatches.size(); i++) {
+        lastFramePts.push_back(cv::Point(filtMatches[i].pt1.x, filtMatches[i].pt1.y));
+        currFramePts.push_back(cv::Point(filtMatches[i].pt2.x, filtMatches[i].pt2.y));
+    }
+
+    // Placeholder for triangulated points
+    cv::Mat pnts3D(4, lastFramePts.size(), CV_64F);
+   
+    cv::Mat P0 = sophus2ProjMat(lastFrame);
+    cv::Mat P1 = sophus2ProjMat(currFrame);
+
+    cv::triangulatePoints(P0, P1, lastFramePts, currFramePts, pnts3D);
+
+    CV3DPoints pts3D;
+    for (int i = 0; i < pnts3D.cols; i++) {
+        cv::Point3d pt3d(pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
+        std::cout << pt3d << std::endl;
+        pts3D.push_back(pt3d);
+    }
+
+    return pts3D;
+
+
+}
+
+
+cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
+
+    Sophus::SE3d pose = _frame.getPose();
+
+    Eigen::Matrix3d rot = pose.rotationMatrix();
+    Vec3 trans = pose.translation();
+
+    cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, trans.coeff(0,0),
+                                            0, 1, 0, trans.coeff(1,0),
+                                            0, 0, 1, trans.coeff(2,0));
+
+    P0.at<double>(0,0) = rot.coeff(0,0); P0.at<double>(0,1) = rot.coeff(0,1); P0.at<double>(0,2) = rot.coeff(0,2);
+    P0.at<double>(1,0) = rot.coeff(1,0); P0.at<double>(1,1) = rot.coeff(1,1); P0.at<double>(1,2) = rot.coeff(1,2);
+    P0.at<double>(2,0) = rot.coeff(2,0); P0.at<double>(2,1) = rot.coeff(2,1); P0.at<double>(2,2) = rot.coeff(2,2);
+
+    return P0;
+
 }
 
 

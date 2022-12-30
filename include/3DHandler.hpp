@@ -17,26 +17,26 @@ struct Pose {
         int numChierality = 0;
         Pose(cv::Mat _R, cv::Mat _t, cv::Mat P) {
             this->R = _R;
-            this->t = _R;
+            this->t = _t;
             this->P = P;
-            Eigen::Matrix3d eigenR;
-            Vec3 eigenT;
+            
+            Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic> eigenR;
             cv::cv2eigen(_R, eigenR);
-            cv::cv2eigen(_R, eigenT);
-
+            Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic> eigenT;
+            cv::cv2eigen(_t, eigenT);
             this->sophusPose = Sophus::SE3d(eigenR, eigenT);
         }
+       
         Pose() {}
         Pose operator=(const Pose &pose) {
             this->R = pose.R;
             this->t = pose.t;
             this->P = pose.P;
             this->numChierality = pose.numChierality;
-            Eigen::Matrix3d eigenR;
-            Vec3 eigenT;
-            cv::cv2eigen(pose.R, eigenR);
-            cv::cv2eigen(pose.t, eigenT);
-
+            Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic> eigenR;
+            cv::cv2eigen(this->R, eigenR);
+            Eigen::Matrix<double,Eigen::Dynamic, Eigen::Dynamic> eigenT;
+            cv::cv2eigen(this->t, eigenT);
             this->sophusPose = Sophus::SE3d(eigenR, eigenT);
             return *this;
         }

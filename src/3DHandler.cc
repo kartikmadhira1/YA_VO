@@ -226,7 +226,6 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     for (int i = 0; i < matches.size(); i++) {
         cam0Pnts.push_back(cv::Point(matches[i].pt1.x, matches[i].pt1.y));
         cam1Pnts.push_back(cv::Point(matches[i].pt2.x, matches[i].pt2.y));
-        std::cout << cam0Pnts[i] << "<---left right--->" << cam1Pnts[i] << std::endl;
     }
     // Placeholder for triangulated points
     cv::Mat pnts3D(4, cam0Pnts.size(), CV_64F);
@@ -285,6 +284,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     cv::Mat R3 = u * negr90.t() * vt;
     cv::Mat t3 = u.col(2);
     if (cv::determinant(R3) < 0) {
+
         R3 = -R3;
         t3 = -t3;
     }
@@ -329,10 +329,13 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     int maxInliers = 0;
     Pose bestPose;
-    for (Pose &eachPose : poseTrain) {
-        if (eachPose.numChierality > maxInliers) {
-            maxInliers = eachPose.numChierality;
-            bestPose = eachPose;
+    for (int i=0;i<poseTrain.size();i++) {
+        if (poseTrain[i].numChierality > maxInliers) {
+            maxInliers = poseTrain[i].numChierality;
+            std::cout << poseTrain[i].R << std::endl;
+            std::cout << poseTrain[i].t << std::endl;
+
+            bestPose = poseTrain[i];
         }
     }
     return bestPose;
@@ -350,7 +353,6 @@ bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose 
 
         cv::Mat X = (cv::Mat_<double>(3, 1) << pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
 
-        std::cout << pnts3D.at<double>(0, i) << " " << pnts3D.at<double>(1, i) << " " << pnts3D.at<double>(2, i) << std::endl;
 
         cv::Mat p3 = r3*(X - t);
         if ( p3.at<double>(0) < 0) {
