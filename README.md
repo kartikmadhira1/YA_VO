@@ -1,1 +1,1 @@
-# Yet Another - Visual Intertial Odometry for fun!
+# Yet Another - Visual Inertial Odometry for fun!
