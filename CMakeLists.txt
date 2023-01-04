@@ -142,8 +142,10 @@ target_link_libraries(
 
 add_executable(
   OptimizerTest
-  tests/OptimizerTest.cc src/Optimizer.cc src/3DHandler.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/Frame.cc
-)
+  tests/OptimizerTest.cc src/Optimizer.cc src/Map.cc
+  src/3DHandler.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/Frame.cc
+
+  )
 target_link_libraries(
   OptimizerTest
   GTest::gtest_main ${Boost_LIBRARIES} ${OpenCV_LIBS}
@@ -157,7 +159,7 @@ target_link_libraries(
 
 add_executable(
   ImageTest
-  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Map.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   ImageTest
@@ -166,7 +168,7 @@ target_link_libraries(
 
 add_executable(
   BriefDescriptorTest
-  tests/BriefDescriptorTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/BriefDescriptorTest.cc src/Utils.cc src/Map.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   BriefDescriptorTest
@@ -178,7 +180,7 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc src/Utils.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/Map.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
 )
 target_link_libraries(
   LoopHandlerTest
@@ -187,7 +189,7 @@ target_link_libraries(
 
 add_executable(
   FastDetectorTest
-  tests/FastDetectorTest.cc src/Utils.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/FastDetectorTest.cc src/Utils.cc  src/Map.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   FastDetectorTest
@@ -196,7 +198,7 @@ target_link_libraries(
 
 add_executable(
   3DHandlerTest
-  tests/3DHandlerTest.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/3DHandlerTest.cc src/Utils.cc src/Map.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   3DHandlerTest

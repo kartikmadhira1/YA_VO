@@ -147,7 +147,7 @@ bool LoopHandler::buildInitMap() {
 }
 
 
-CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
+CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
                                                     const std::vector<Matches> filtMatches) {
     
     CV2DPoints lastFramePts;
@@ -181,7 +181,7 @@ CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame,
 
 cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
 
-    Sophus::SE3d pose = _frame.getPose();
+    Sophus::SE3d pose = _frame->getPose();
 
     Eigen::Matrix3d rot = pose.rotationMatrix();
     Vec3 trans = pose.translation();
