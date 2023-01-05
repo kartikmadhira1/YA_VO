@@ -334,7 +334,7 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
             maxInliers = poseTrain[i].numChierality;
             std::cout << poseTrain[i].R << std::endl;
             std::cout << poseTrain[i].t << std::endl;
-
+            std::cout << poseTrain[i].numChierality << std::endl;
             bestPose = poseTrain[i];
         }
     }

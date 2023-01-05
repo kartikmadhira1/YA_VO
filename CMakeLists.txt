@@ -25,11 +25,20 @@ find_package(G2O REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS thread)
 #INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
+find_package(OpenGL REQUIRED)
+message(STATUS "GL included at ${OPENGL_INCLUDE_DIR}")
+
+find_package(GLEW REQUIRED)
+include_directories(${GLEW_INCLUDE_DIRS})
+message(STATUS "GLEW included at ${GLM_INCLUDE_DIR}")
 
 find_package(jsoncpp REQUIRED)
 find_package(Boost 1.3 COMPONENTS filesystem) 
 find_package(Eigen3 3.3 REQUIRED)
 find_package(Sophus REQUIRED)
+# pangolin
+find_package(Pangolin REQUIRED)
+include_directories(${Pangolin_INCLUDE_DIRS})
 
 include_directories(${G2O_INCLUDE_DIR})
 
@@ -42,8 +51,10 @@ endif ()
 
 include_directories(${Boost_INCLUDE_DIRS} ${G2O_INCLUDE_DIRS} ${Sophus_INCLUDE_DIRS}) 
 find_package (glog 0.6.0 REQUIRED)
-
-
+FIND_LIBRARY(OPENGL_LIBRARY             
+NAMES GL 
+PATHS /usr/local /usr 
+PATH_SUFFIXES lib)
 IF (G2O_INCLUDE_DIR)
     MESSAGE(STATUS "Found g2o headers in: ${G2O_INCLUDE_DIR}")
   ENDIF (G2O_INCLUDE_DIR)
@@ -128,7 +139,12 @@ target_link_libraries(g2otest ${G2O_CORE_LIBRARY} ${G2O_STUFF_LIB} ${G2O_STUFF_L
 
 # Link CHOLMOD if available, CSparse otherwise
 
-
+add_executable(
+  viz src/viz.cc 
+)
+target_link_libraries(
+  viz  ${Pangolin_LIBRARIES} ${OPENGL_LIBRARIES}
+)
 enable_testing()
 
 add_executable(
@@ -143,7 +159,7 @@ target_link_libraries(
 add_executable(
   OptimizerTest
   tests/OptimizerTest.cc src/Optimizer.cc src/Map.cc
-  src/3DHandler.cc src/Utils.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/Frame.cc
+  src/3DHandler.cc src/Utils.cc src/FastDetector.cc src/MapPoint.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/Frame.cc
 
   )
 target_link_libraries(
@@ -159,7 +175,7 @@ target_link_libraries(
 
 add_executable(
   ImageTest
-  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc src/Map.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/ImageTest.cc src/Utils.cc src/FastDetector.cc  src/MapPoint.cc src/Map.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   ImageTest
@@ -168,7 +184,7 @@ target_link_libraries(
 
 add_executable(
   BriefDescriptorTest
-  tests/BriefDescriptorTest.cc src/Utils.cc src/Map.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/BriefDescriptorTest.cc src/Utils.cc src/Map.cc src/MapPoint.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   BriefDescriptorTest
@@ -180,16 +196,16 @@ target_link_libraries(
 
 add_executable(
   LoopHandlerTest
-  tests/LoopHandlerTest.cc src/Utils.cc src/Map.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
+  tests/LoopHandlerTest.cc src/Utils.cc src/Map.cc src/MapPoint.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
 )
 target_link_libraries(
   LoopHandlerTest
-  GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES}
+  GTest::gtest_main ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES} ${Pangolin_LIBRARIES} ${OPENGL_LIBRARIES}
 )
 
 add_executable(
   FastDetectorTest
-  tests/FastDetectorTest.cc src/Utils.cc  src/Map.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/FastDetectorTest.cc src/Utils.cc src/MapPoint.cc  src/Map.cc src/FastDetector.cc src/LoopHandler.cc src/Image.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   FastDetectorTest
@@ -198,7 +214,7 @@ target_link_libraries(
 
 add_executable(
   3DHandlerTest
-  tests/3DHandlerTest.cc src/Utils.cc src/Map.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
+  tests/3DHandlerTest.cc src/Utils.cc src/Map.cc src/MapPoint.cc src/FastDetector.cc src/Image.cc src/LoopHandler.cc src/BriefDescriptor.cc src/3DHandler.cc src/Frame.cc
 )
 target_link_libraries(
   3DHandlerTest

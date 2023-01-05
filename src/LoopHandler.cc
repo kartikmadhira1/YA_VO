@@ -111,10 +111,7 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
     // Compute BRIEF features
     brief.computeBrief(features, *_frame);
     // Add features to frame
-    for (auto &eachFeature : features) {
-        Feature::ptr feat = std::make_shared<Feature>(_frame, cv::Point2i(eachFeature.x, eachFeature.y));
-        _frame->features.push_back(feat);
-    }
+    
 }
 
 
@@ -129,6 +126,13 @@ bool LoopHandler::buildInitMap() {
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
+    // adding as features only those points that have been matched and filtered out
+    for (auto &eachMatch : filterMatches) {
+        Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2i(eachMatch.pt1.x, eachMatch.pt1.y));
+        lastFrame->features.push_back(feat1);
+        Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2i(eachMatch.pt2.x, eachMatch.pt2.y));
+        currentFrame->features.push_back(feat2);
+    }
     cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
     handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
     // Essential matrix from fundamental matrix
@@ -142,6 +146,25 @@ bool LoopHandler::buildInitMap() {
     map.insertKeyFrame(currentFrame);
 
     //triangulate based on the last and currentFrame
+    CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
+
+    // Points used in 3d triangulation = same as the ones matched after outlier removal
+
+    for (int i=0;i<new3dPoints.size();i++) {
+        MapPoint::ptr newPt = MapPoint::createMapPoint();
+        std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
+        newPt->setPos(new3dPoints[i]);
+        newPt->addObservation(lastFrame->features[i]);
+        newPt->addObservation(currentFrame->features[i]);
+        map.insertMapPoint(newPt);
+        
+    }
+    
+    // initial triangulation -> done
+    // initial poses estimated -> done
+    // map updated -> done
+    // update the viewer ->
+
 
     return true;
 }
@@ -169,7 +192,6 @@ CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFr
     CV3DPoints pts3D;
     for (int i = 0; i < pnts3D.cols; i++) {
         cv::Point3d pt3d(pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
-        std::cout << pt3d << std::endl;
         pts3D.push_back(pt3d);
     }
 
@@ -185,14 +207,16 @@ cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
 
     Eigen::Matrix3d rot = pose.rotationMatrix();
     Vec3 trans = pose.translation();
-
     cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, trans.coeff(0,0),
                                             0, 1, 0, trans.coeff(1,0),
                                             0, 0, 1, trans.coeff(2,0));
-
     P0.at<double>(0,0) = rot.coeff(0,0); P0.at<double>(0,1) = rot.coeff(0,1); P0.at<double>(0,2) = rot.coeff(0,2);
     P0.at<double>(1,0) = rot.coeff(1,0); P0.at<double>(1,1) = rot.coeff(1,1); P0.at<double>(1,2) = rot.coeff(1,2);
     P0.at<double>(2,0) = rot.coeff(2,0); P0.at<double>(2,1) = rot.coeff(2,1); P0.at<double>(2,2) = rot.coeff(2,2);
+    
+    P0 = handler3D.intrinsics.Left.getK()*P0;
+    
+    std::cout << "Proj matrix" << P0 << std::endl;
 
     return P0;
 

@@ -23,4 +23,7 @@ void Map::insertMapPoint(MapPoint::ptr mp) {
     }
 }
 
-
+Map::ptr createMap() {
+    Map::ptr _map = std::make_shared<Map>();
+    return _map;
+}

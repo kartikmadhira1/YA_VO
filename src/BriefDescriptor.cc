@@ -221,8 +221,10 @@ void Brief::removeOutliers(std::vector<Matches> &matches, std::vector<Matches> &
 
     // Remove outliers
 
-    for (auto eachMatch : matches) {
+    for (auto &eachMatch : matches) {
         if (eachMatch.distance < std::max(2*result.first->distance, threshold)) {
+            eachMatch.pt1.matched = true;
+            eachMatch.pt2.matched = true;
             newMatches.push_back(eachMatch);
         }
     }
