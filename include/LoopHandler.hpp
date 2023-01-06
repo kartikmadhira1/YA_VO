@@ -4,7 +4,9 @@
 #include <json/json.h>
 #include "Utils.hpp"
 #include "Frame.hpp"
+#include "MapPoint.hpp"
 #include "Map.hpp"
+#include "viz.hpp"
 #include "BriefDescriptor.hpp"
 #include "FastDetector.hpp"
 #include "3DHandler.hpp"
@@ -35,8 +37,10 @@ class LoopHandler {
         int currentFrameId;
     public:
         LoopHandler();
+        void setViewer();
         LoopHandler(const std::string &config);
-        Map map;
+        Map::ptr map = nullptr;
+        Viewer::ptr viz = nullptr;
         Brief brief;
         FastDetector fd;
         std::vector<std::string> leftPathTrain;

@@ -23,7 +23,19 @@ void Map::insertMapPoint(MapPoint::ptr mp) {
     }
 }
 
-Map::ptr createMap() {
+Map::ptr Map::createMap() {
     Map::ptr _map = std::make_shared<Map>();
     return _map;
+}
+
+Map::FramesType Map::getActiveFrames() {
+    std::unique_lock<std::mutex> lck(mapLock);
+    return frames;
+}
+
+
+Map::LandMarksType Map::getActiveMPs() {
+    std::unique_lock<std::mutex> lck(mapLock);
+    return landmarks;
+
 }

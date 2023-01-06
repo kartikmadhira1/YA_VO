@@ -25,6 +25,11 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     generatePathTrain();
     _trainIterator = leftPathTrain.begin();
 
+
+    map = Map::createMap();
+    viz = std::make_shared<Viewer>();
+    viz->setMap(map);
+    
 }
 
 
@@ -78,11 +83,13 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
         if (lastFrame != nullptr) {
             bool success = buildInitMap();
             if (success) {
+                if(viz) {
+                    viz->addCurrentFrame(currentFrame);
+                    viz->updateMap();
+                }
                 std::cout << "Built initial map" << std::endl;
-            } else {
-                std::cout << "Something is wrong" << std::endl;
-
             }
+          
         }
     } 
     lastFrame = currentFrame;
@@ -128,9 +135,9 @@ bool LoopHandler::buildInitMap() {
     brief.removeOutliers(matches, filterMatches, 20.0);
     // adding as features only those points that have been matched and filtered out
     for (auto &eachMatch : filterMatches) {
-        Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2i(eachMatch.pt1.x, eachMatch.pt1.y));
+        Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
         lastFrame->features.push_back(feat1);
-        Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2i(eachMatch.pt2.x, eachMatch.pt2.y));
+        Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
         currentFrame->features.push_back(feat2);
     }
     cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
@@ -142,8 +149,8 @@ bool LoopHandler::buildInitMap() {
     currentFrame->setPose(p.sophusPose);
 
     // insert current and last frame into the map
-    map.insertKeyFrame(lastFrame);
-    map.insertKeyFrame(currentFrame);
+    map->insertKeyFrame(lastFrame);
+    map->insertKeyFrame(currentFrame);
 
     //triangulate based on the last and currentFrame
     CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
@@ -154,18 +161,14 @@ bool LoopHandler::buildInitMap() {
         MapPoint::ptr newPt = MapPoint::createMapPoint();
         std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
         newPt->setPos(new3dPoints[i]);
+        // add features that map to the 3d point
         newPt->addObservation(lastFrame->features[i]);
         newPt->addObservation(currentFrame->features[i]);
-        map.insertMapPoint(newPt);
-        
+        // insert 3d points that are part of the features in frame
+        lastFrame->features[i]->mapPoint = newPt;
+        currentFrame->features[i]->mapPoint = newPt;
+        map->insertMapPoint(newPt);
     }
-    
-    // initial triangulation -> done
-    // initial poses estimated -> done
-    // map updated -> done
-    // update the viewer ->
-
-
     return true;
 }
 

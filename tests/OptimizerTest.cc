@@ -3,6 +3,7 @@
 #include "../include/LoopHandler.hpp"
 #include "../include/Frame.hpp"
 #include "../include/FastDetector.hpp"
+#include "../include/MapPoint.hpp"
 #include <gtest/gtest.h>
 
 

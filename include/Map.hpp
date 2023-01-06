@@ -19,7 +19,9 @@ class Map {
         // Insert frames and mappoint to the whole map
         void insertKeyFrame(Frame::ptr fr);
         void insertMapPoint(MapPoint::ptr mp);
-
+        FramesType getActiveFrames();
+        LandMarksType getActiveMPs();
+        static Map::ptr createMap();
     private:
         std::mutex mapLock;
         LandMarksType landmarks;
