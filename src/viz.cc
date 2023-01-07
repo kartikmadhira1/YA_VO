@@ -86,7 +86,7 @@ cv::Mat Viewer::plotFromImage() {
     for (size_t i = 0; i < currentFrame->features.size(); ++i) {
         if (currentFrame->features[i]->mapPoint.lock()) {
             auto feat = currentFrame->features[i];
-            std::cout << feat->kp << std::endl;
+            // std::cout << feat->kp << std::endl;
             cv::circle(img, cv::Point2i(feat->kp.y, feat->kp.x), 2, cv::Scalar(0, 250, 0),
                        2);
         }

@@ -40,7 +40,6 @@ void getCalibParams(std::string _path, Intrinsics &calib) {
     std::vector<std::string> stringVector;
     std::string line;
     std::ifstream _file(_path);
-    std::cout << "thisss is the pathhhhh" <<_path << std::endl;
     if (_file.good()) {
         int _i = 0;
         if (_file.is_open()) {

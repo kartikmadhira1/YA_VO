@@ -135,10 +135,11 @@ IF (G2O_INCLUDE_DIR)
 # )
 add_executable(
   yaVio
-  src/main.cc src/Utils.cc src/Map.cc src/viz.cc src/MapPoint.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
+  src/main.cc src/Utils.cc src/Map.cc src/Optimizer.cc src/viz.cc src/MapPoint.cc src/LoopHandler.cc src/FastDetector.cc src/Image.cc src/Frame.cc src/Map.cc  src/BriefDescriptor.cc src/3DHandler.cc src/Image.cc
 )
 target_link_libraries(
-  yaVio ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES} ${Pangolin_LIBRARIES} ${OPENGL_LIBRARIES}
+  yaVio ${OpenCV_LIBS} jsoncpp_lib ${Boost_LIBRARIES} ${Pangolin_LIBRARIES} ${OPENGL_LIBRARIES}  ${G2O_CORE_LIBRARY} ${G2O_STUFF_LIB} ${G2O_STUFF_LIBRARY} ${G2O_LIBRARIES}
+  glog::glog
 )
 
 

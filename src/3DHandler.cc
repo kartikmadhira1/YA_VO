@@ -212,6 +212,8 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     cv::Mat u = ESolveSVD.u;
     cv::Mat vt = ESolveSVD.vt;
     cv::Mat w = ESolveSVD.w;
+    cv::Mat R0 = cv::Mat::eye(3,3, CV_64F);
+    cv::Mat t0 = (cv::Mat_<double>(3, 1) << 0, 0, 0);
     cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, 0,
                                             0, 1, 0, 0,
                                             0, 0, 1, 0);
@@ -252,7 +254,10 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     cv::triangulatePoints(P0, P1, cam0Pnts, cam1Pnts, pnts3D);
     pnts3D.copyTo(pose1._3DPts);
-    if (checkDepthPositive(pnts3D, R1, t, pose1)) {
+    if (checkDepthPositive(pnts3D, R0, R1, t0, t, pose1)) {
+        std::cout << "Pose 1 accepted" << std::endl;
+        std::cout << pose1.numChierality << std::endl;
+
         poseTrain.push_back(pose1);
     }
 
@@ -275,7 +280,10 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     cv::triangulatePoints(P0, P2, cam0Pnts, cam1Pnts, pnts3D);
     pnts3D.copyTo(pose2._3DPts);
 
-    if (checkDepthPositive(pnts3D, R2, t2,  pose2)) {
+    if (checkDepthPositive(pnts3D, R0,R2,t0, t2,  pose2)) {
+        std::cout << "Pose 2 accepted" << std::endl;
+        std::cout << pose2.numChierality << std::endl;
+
         poseTrain.push_back(pose2);
     }
 
@@ -299,7 +307,10 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     cv::triangulatePoints(P0, P3, cam0Pnts, cam1Pnts, pnts3D);
     pnts3D.copyTo(pose3._3DPts);
-    if (checkDepthPositive(pnts3D, R3, t3, pose3)) {
+    if (checkDepthPositive(pnts3D, R0, R3, t0,t3, pose3)) {
+        std::cout << "Pose 3 accepted" << std::endl;
+        std::cout << pose3.numChierality << std::endl;
+
         poseTrain.push_back(pose3);
     }
 
@@ -322,7 +333,10 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
     cv::triangulatePoints(P0, P4, cam0Pnts, cam1Pnts, pnts3D);
     pnts3D.copyTo(pose4._3DPts);
-    if (checkDepthPositive(pnts3D, R4, t4, pose4)) {
+    if (checkDepthPositive(pnts3D, R0, R4, t0, t4, pose4)) {
+        std::cout << "Pose 4 accepted" << std::endl;
+        std::cout << pose4.numChierality << std::endl;
+
         poseTrain.push_back(pose4);
     }
     
@@ -332,9 +346,6 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
     for (int i=0;i<poseTrain.size();i++) {
         if (poseTrain[i].numChierality > maxInliers) {
             maxInliers = poseTrain[i].numChierality;
-            std::cout << poseTrain[i].R << std::endl;
-            std::cout << poseTrain[i].t << std::endl;
-            std::cout << poseTrain[i].numChierality << std::endl;
             bestPose = poseTrain[i];
         }
     }
@@ -343,10 +354,9 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
 
 
 
-bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose &pose) {
+bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R1, cv::Mat R2, cv::Mat t1, cv::Mat t2, Pose &pose) {
     // Check if the depth of the points are positive
     for (int i = 0; i < pnts3D.cols; i++) {
-        cv::Mat r3 = R.row(2);
         pnts3D.at<double>(0, i) = pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i);
         pnts3D.at<double>(1, i) = pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i);
         pnts3D.at<double>(2, i) = pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i);
@@ -354,8 +364,11 @@ bool _3DHandler::checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose 
         cv::Mat X = (cv::Mat_<double>(3, 1) << pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
 
 
-        cv::Mat p3 = r3*(X - t);
-        if ( p3.at<double>(0) < 0) {
+        cv::Mat r31 = R1.row(2);
+        cv::Mat p31 = r31*(X - t1);
+        cv::Mat r32 = R2.row(2);
+        cv::Mat p32 = r32*(X - t2);
+        if ( (p31.at<double>(0) < 0) || (p32.at<double>(0) < 0)) {
             continue;
         } else {
            

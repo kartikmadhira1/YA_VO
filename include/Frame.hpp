@@ -12,6 +12,7 @@ class Frame : public Image {
         typedef std::shared_ptr<Frame> ptr;
         unsigned long frameID;
         Sophus::SE3d pose;
+        std::vector<Sophus::SE3d> sisPoses;
         std::vector<std::shared_ptr<Feature>> features;
         Frame() {}
         Frame(const cv::Mat &img, unsigned long _frameID) : Image(img), frameID(_frameID) {

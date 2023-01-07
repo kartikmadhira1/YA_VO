@@ -23,8 +23,8 @@ TEST(BriefDescritor, GetSideBySideImageMatches) {
     brief.computeBrief(features1, testObj1);
     brief.computeBrief(features2, testObj2);
 
-    std::cout << "Features1 size: " << features1.size() << std::endl;
-    std::cout << "Features2 size: " << features2.size() << std::endl;
+    // std::cout << "Features1 size: " << features1.size() << std::endl;
+    // std::cout << "Features2 size: " << features2.size() << std::endl;
 
     
 
@@ -34,7 +34,7 @@ TEST(BriefDescritor, GetSideBySideImageMatches) {
 
     brief.removeOutliers(matches, filterMatches, 20.0);
 
-    std::cout << filterMatches.size() << std::endl;
+    // std::cout << filterMatches.size() << std::endl;
     cv::Mat sideBySide = brief.drawMatches(testObj1, testObj2, filterMatches);
     cv::cvtColor(testImage1, testImage1, cv::COLOR_GRAY2RGB);
     cv::cvtColor(testImage2, testImage2, cv::COLOR_GRAY2RGB);

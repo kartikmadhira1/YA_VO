@@ -7,6 +7,7 @@
 #include "MapPoint.hpp"
 #include "Map.hpp"
 #include "viz.hpp"
+#include "Optimizer.hpp"
 #include "BriefDescriptor.hpp"
 #include "FastDetector.hpp"
 #include "3DHandler.hpp"
@@ -46,7 +47,7 @@ class LoopHandler {
         std::vector<std::string> leftPathTrain;
         std::vector<std::string> rightPathTrain;
 
-
+        Optimizer optim;
         _3DHandler handler3D;
         // Gather an image from the path train
         Frame::ptr getNextFrame();
@@ -61,7 +62,7 @@ class LoopHandler {
         // run VO
         void runVO();
         // triangulate points
-        
+        Sophus::SE3d optimizePoseOnly(CV3DPoints pts3D, CV2DPoints camPts, cv::Mat K);
         CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
                             const std::vector<Matches> filtMatches);
 

@@ -146,8 +146,9 @@ bool LoopHandler::buildInitMap() {
     cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
     // Get the pose of the second camera
     Pose p = handler3D.disambiguateRT(E, filterMatches);
-    currentFrame->setPose(p.sophusPose);
-
+    Sophus::SE3d currPose = p.sophusPose.inverse();
+    currentFrame->setPose(currPose);
+    
     // insert current and last frame into the map
     map->insertKeyFrame(lastFrame);
     map->insertKeyFrame(currentFrame);
@@ -159,7 +160,7 @@ bool LoopHandler::buildInitMap() {
 
     for (int i=0;i<new3dPoints.size();i++) {
         MapPoint::ptr newPt = MapPoint::createMapPoint();
-        std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
+        // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
         newPt->setPos(new3dPoints[i]);
         // add features that map to the 3d point
         newPt->addObservation(lastFrame->features[i]);
@@ -169,8 +170,24 @@ bool LoopHandler::buildInitMap() {
         currentFrame->features[i]->mapPoint = newPt;
         map->insertMapPoint(newPt);
     }
+
+
+
     return true;
 }
+
+
+Sophus::SE3d LoopHandler::optimizePoseOnly(CV3DPoints pts3D, CV2DPoints camPts, cv::Mat K) {
+    Sophus::SE3d _pose;
+
+    optim.partialBA(pts3D, camPts, K, _pose);
+
+    return _pose;
+}
+
+
+
+
 
 
 CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
@@ -219,7 +236,7 @@ cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
     
     P0 = handler3D.intrinsics.Left.getK()*P0;
     
-    std::cout << "Proj matrix" << P0 << std::endl;
+    // std::cout << "Proj matrix" << P0 << std::endl;
 
     return P0;
 

@@ -61,7 +61,7 @@ class _3DHandler {
 
         cv::Mat constructNormMatrix(std::vector<double> xVec, std::vector<double> yVec, 
                                                 double xMean, double yMean);
-        bool checkDepthPositive(cv::Mat &pnts3D, cv::Mat R, cv::Mat t, Pose &pose);
+        bool checkDepthPositive(cv::Mat &pnts3D, cv::Mat R1, cv::Mat R2, cv::Mat t1, cv::Mat t2, Pose &pose);
         float unNormalizePoint(float pt, float mean, float var);
         cv::Mat rotateMatrixZ(int rotateAngle);
         double getMeanVar(std::vector<double> &vec);
