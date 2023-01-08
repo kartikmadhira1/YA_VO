@@ -78,11 +78,12 @@ int LoopHandler::getLeftTrainLength() {
 
 
 void LoopHandler::addFrame(Frame::ptr _frame) {
+    currentFrame = _frame;
     if (status == voStatus::INIT) {
-        currentFrame = _frame;
-        if (lastFrame != nullptr) {
+        if (lastFrame) {
             bool success = buildInitMap();
             if (success) {
+                status = voStatus::TRACKING;
                 if(viz) {
                     viz->addCurrentFrame(currentFrame);
                     viz->updateMap();
@@ -91,9 +92,53 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
             }
           
         }
-    } 
+    }
+    else if (status == voStatus::TRACKING) {
+        // Map has already been built, now track the features
+        trackLastFrame(); 
+    }
     lastFrame = currentFrame;
 }
+
+
+
+/*
+    LAST FRAME ->GET FEATURES -> GET MAP POINTS -> PROJECT TO CURRENT FRAME - 
+    -> IF STATUS FOR FEATURE IS GOOD -> ADD AS A NEW FEATURE -> ADD CORRESPONDING PREV. MAP POINT TO THIS NEW FEATURE
+    -> ADD THIS NEW FEATURE TO CURRENT FRAME -> KEEP COUNT OF NEW FEATURES ADDED
+                    
+*/
+
+
+void LoopHandler::trackLastFrame() {
+
+    // Initial guess for the new pose based on motion 
+    if (lastFrame) {
+        currentFrame->setPose(relativeMotion*lastFrame->pose);
+    }
+
+    for (auto &eachKp:lastFrame->features) {
+        // convert the weak ptr to shared with lock 
+        if (auto mapPtr = eachKp->mapPoint.lock() ) {
+            auto mp = mapPtr->position;
+            // project mp on the current pose
+            auto currKp = currentFrame->world2Camera(mp, currentFrame->pose, handler3D.intrinsics.Left.getK());
+            // check the points fall within the boundry of the image
+            cv::Point2d newPts = cv::Point2d(currKp.coeff(0)/currKp.coeff(2), currKp.coeff(1)/currKp.coeff(2));
+            // if (newPts.x > 0 && newPts.y > 0) {
+            // }
+
+        }
+    }
+    relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
+    map->insertKeyFrame(currentFrame);
+    if(viz) {
+        viz->addCurrentFrame(currentFrame);
+        viz->updateMap();
+    }
+}
+
+
 
 bool LoopHandler::takeVOStep() {
     // Get the next image 
@@ -105,8 +150,6 @@ bool LoopHandler::takeVOStep() {
         addFrame(frame);
         return true;
     }
-
-
 
 }
 
@@ -125,6 +168,15 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
 void LoopHandler::runVO() {
     takeVOStep();
     takeVOStep();
+    takeVOStep();
+    takeVOStep();
+    takeVOStep();
+    takeVOStep();
+    takeVOStep();
+    takeVOStep();
+    takeVOStep();
+
+
 }
 
 bool LoopHandler::buildInitMap() {
@@ -145,10 +197,37 @@ bool LoopHandler::buildInitMap() {
     // Essential matrix from fundamental matrix
     cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
     // Get the pose of the second camera
-    Pose p = handler3D.disambiguateRT(E, filterMatches);
-    Sophus::SE3d currPose = p.sophusPose.inverse();
+    // Pose p = handler3D.disambiguateRT(E, filterMatches);
+
+    cv::Mat R; cv::Mat t;
+    CV2DPoints lastFramePts;
+    CV2DPoints currFramePts;
+    cv::Point2d principal_point(607.193, 185.216);  //相机光心, TUM dataset标定值
+    cv::Point2d focal_length(718.856, 718.856);  //相机光心, TUM dataset标定值
+
+    for (int i = 0; i < filterMatches.size(); i++) {
+        lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
+        currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
+    }
+
+    cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
+
+
+    Eigen::Matrix<double, 3, 3> REigen ;
+
+    REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
+    R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
+    R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
+
+    Eigen::Matrix<double, 3, 1>  tEigen ;
+
+    tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
+
+
+
+    Sophus::SE3d currPose(REigen, tEigen);
     currentFrame->setPose(currPose);
-    
+
     // insert current and last frame into the map
     map->insertKeyFrame(lastFrame);
     map->insertKeyFrame(currentFrame);
@@ -171,6 +250,7 @@ bool LoopHandler::buildInitMap() {
         map->insertMapPoint(newPt);
     }
 
+    relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
 
 
     return true;
@@ -211,7 +291,7 @@ CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFr
 
     CV3DPoints pts3D;
     for (int i = 0; i < pnts3D.cols; i++) {
-        cv::Point3d pt3d(pnts3D.at<double>(0, i), pnts3D.at<double>(1, i), pnts3D.at<double>(2, i));
+        cv::Point3d pt3d(pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i), pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i), pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i));
         pts3D.push_back(pt3d);
     }
 
@@ -227,9 +307,9 @@ cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
 
     Eigen::Matrix3d rot = pose.rotationMatrix();
     Vec3 trans = pose.translation();
-    cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, trans.coeff(0,0),
-                                            0, 1, 0, trans.coeff(1,0),
-                                            0, 0, 1, trans.coeff(2,0));
+    cv::Mat P0 = (cv::Mat_<double>(3, 4) << 1, 0, 0, trans.coeff(0),
+                                            0, 1, 0, trans.coeff(1),
+                                            0, 0, 1, trans.coeff(2));
     P0.at<double>(0,0) = rot.coeff(0,0); P0.at<double>(0,1) = rot.coeff(0,1); P0.at<double>(0,2) = rot.coeff(0,2);
     P0.at<double>(1,0) = rot.coeff(1,0); P0.at<double>(1,1) = rot.coeff(1,1); P0.at<double>(1,2) = rot.coeff(1,2);
     P0.at<double>(2,0) = rot.coeff(2,0); P0.at<double>(2,1) = rot.coeff(2,1); P0.at<double>(2,2) = rot.coeff(2,2);
@@ -242,14 +322,13 @@ cv::Mat LoopHandler::sophus2ProjMat( Frame::ptr _frame) {
 
 }
 
-
 Frame::ptr LoopHandler::getNextFrame() {
     if (_trainIterator != leftPathTrain.end()) {
         cv::Mat img = cv::imread(*_trainIterator, 0);
         currentFrameId = _trainIterator - leftPathTrain.begin();
         _trainIterator++;
         // ADD FRAME ID TO FRAME!!!!!!!!!!!!!-----------------
-        Frame::ptr frame = std::make_shared<Frame>(img, currentFrameId);    
+        Frame::ptr frame = std::make_shared<Frame>(img, Frame::createFrameID());    
         return frame;
     }
     return nullptr;

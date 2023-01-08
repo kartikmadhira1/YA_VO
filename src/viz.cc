@@ -15,6 +15,7 @@ void Viewer::close() {
 
 void Viewer::addCurrentFrame(Frame::ptr frame) {
     std::unique_lock<std::mutex> viewLock(viewerMutex);
+    std::cout << "new frame added" << std::endl;
     currentFrame = frame;
 }
 
@@ -25,22 +26,20 @@ void Viewer::setMap(Map::ptr _map) {
 
 void Viewer::updateMap() {
     std::unique_lock<std::mutex> viewLock(viewerMutex);
-    frames = map->getActiveFrames();
-    mps = map->getActiveMPs();
+    frames = this->map->getActiveFrames();
+    for (auto &eachFrame:frames) {
+        std::cout << "New frame no:" << eachFrame.second->pose.matrix() << std::endl;
+    }
+    mps = this->map->getActiveMPs();
 }
 
 
 void Viewer::plotterLoop() {
-    try {
         pangolin::CreateWindowAndBind("YA_VIO", 1024, 768);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    }
-    catch(const std::exception& e) {
-        std::cerr << e.what() << '\n';
-    }
-    
+  
     pangolin::OpenGlRenderState visCamera(
         pangolin::ProjectionMatrix(1024, 768, 400, 400, 512, 384, 0.1, 1000),
         pangolin::ModelViewLookAt(0, -5, -10, 0, 0, 0, 0.0, -1.0, 0.0));
@@ -74,7 +73,7 @@ void Viewer::plotterLoop() {
         }
 
         pangolin::FinishFrame();
-        usleep(5000);
+        usleep(500);
     }
 }
 

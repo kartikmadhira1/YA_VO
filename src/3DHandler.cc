@@ -241,12 +241,18 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
         R1 = -R1;
         t = -t;
     }
-    cv::Mat P1 = cv::Mat::eye(3, 4, CV_64F);
-    P1.at<double>(0, 3) = -t.at<double>(0);
-    P1.at<double>(1, 3) = -t.at<double>(1);
-    P1.at<double>(2, 3) = -t.at<double>(2);
-    P1 = intrinsics.Left.K * R1 * P1;
-    P1 = P1/P1.at<double>(2, 3);
+    // cv::Mat P1 = cv::Mat::eye(3, 4, CV_64F);
+    // P1.at<double>(0, 3) = -t.at<double>(0);
+    // P1.at<double>(1, 3) = -t.at<double>(1);
+    // P1.at<double>(2, 3) = -t.at<double>(2);
+    // // P1 = P1/P1.at<double>(2, 3);
+
+    cv::Mat P1 = (cv::Mat_<double>(3, 4) <<
+    R1.at<double>(0, 0), R1.at<double>(0, 1), R1.at<double>(0, 2), t.at<double>(0, 0),
+    R1.at<double>(1, 0), R1.at<double>(1, 1), R1.at<double>(1, 2), t.at<double>(1, 0),
+    R1.at<double>(2, 0), R1.at<double>(2, 1), R1.at<double>(2, 2), t.at<double>(2, 0)
+  );
+    P1 = intrinsics.Left.K * P1;
 
 
     // Encapsulate in a Pose struct
@@ -268,12 +274,19 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
         R2 = -R2;
         t2 = -t2;
     }
-    cv::Mat P2 = cv::Mat::eye(3, 4, CV_64F);
-    P2.at<double>(0, 3) = -t2.at<double>(0);
-    P2.at<double>(1, 3) = -t2.at<double>(1);
-    P2.at<double>(2, 3) = -t2.at<double>(2);
-    P2 = intrinsics.Left.K * R2 * P2;
-    P2 = P2/P2.at<double>(2, 3);
+    // cv::Mat P2 = cv::Mat::eye(3, 4, CV_64F);
+    // P2.at<double>(0, 3) = -t2.at<double>(0);
+    // P2.at<double>(1, 3) = -t2.at<double>(1);
+    // P2.at<double>(2, 3) = -t2.at<double>(2);
+    // P2 = intrinsics.Left.K * R2 * P2;
+    // P2 = P2/P2.at<double>(2, 3);
+    cv::Mat P2 = (cv::Mat_<double>(3, 4) <<
+    R2.at<double>(0, 0), R2.at<double>(0, 1), R2.at<double>(0, 2), t2.at<double>(0, 0),
+    R2.at<double>(1, 0), R2.at<double>(1, 1), R2.at<double>(1, 2), t2.at<double>(1, 0),
+    R2.at<double>(2, 0), R2.at<double>(2, 1), R2.at<double>(2, 2), t2.at<double>(2, 0)
+  );
+    P2 = intrinsics.Left.K * P2;
+
 
     Pose pose2(R2, t2, P2);
 
@@ -296,12 +309,20 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
         R3 = -R3;
         t3 = -t3;
     }
-    cv::Mat P3 = cv::Mat::eye(3, 4, CV_64F);
-    P3.at<double>(0, 3) = -t3.at<double>(0);
-    P3.at<double>(1, 3) = -t3.at<double>(1);
-    P3.at<double>(2, 3) = -t3.at<double>(2);
-    P3 = intrinsics.Left.K * R3 * P3;
-    P3 = P3/P3.at<double>(2, 3);
+    // cv::Mat P3 = cv::Mat::eye(3, 4, CV_64F);
+    // P3.at<double>(0, 3) = -t3.at<double>(0);
+    // P3.at<double>(1, 3) = -t3.at<double>(1);
+    // P3.at<double>(2, 3) = -t3.at<double>(2);
+    // P3 = intrinsics.Left.K * R3 * P3;
+    // P3 = P3/P3.at<double>(2, 3);
+
+    cv::Mat P3 = (cv::Mat_<double>(3, 4) <<
+    R3.at<double>(0, 0), R3.at<double>(0, 1), R3.at<double>(0, 2), t3.at<double>(0, 0),
+    R3.at<double>(1, 0), R3.at<double>(1, 1), R3.at<double>(1, 2), t3.at<double>(1, 0),
+    R3.at<double>(2, 0), R3.at<double>(2, 1), R3.at<double>(2, 2), t3.at<double>(2, 0)
+  );
+    P3 = intrinsics.Left.K * P3;
+
 
     Pose pose3(R3, t3, P3);
 
@@ -322,13 +343,26 @@ Pose _3DHandler::disambiguateRT(const cv::Mat &E, std::vector<Matches> &matches)
         R4 = -R4;
         t4 = -t4;
     }
-    cv::Mat P4 = cv::Mat::eye(3, 4, CV_64F);
-    P4.at<double>(0, 3) = -t4.at<double>(0);
-    P4.at<double>(1, 3) = -t4.at<double>(1);
-    P4.at<double>(2, 3) = -t4.at<double>(2);
-    P4 = intrinsics.Left.K * R4 * P4;
+    // cv::Mat P4 = cv::Mat::eye(3, 4, CV_64F);
+    // P4.at<double>(0, 3) = -t4.at<double>(0);
+    // P4.at<double>(1, 3) = -t4.at<double>(1);
+    // P4.at<double>(2, 3) = -t4.at<double>(2);
+    // P4 = intrinsics.Left.K * R4 * P4;
 
-    P4 = P4/P4.at<double>(2, 3);
+    // P4 = P4/P4.at<double>(2, 3);
+  
+
+    cv::Mat P4 = (cv::Mat_<double>(3, 4) <<
+    R4.at<double>(0, 0), R4.at<double>(0, 1), R4.at<double>(0, 2), t4.at<double>(0, 0),
+    R4.at<double>(1, 0), R4.at<double>(1, 1), R4.at<double>(1, 2), t4.at<double>(1, 0),
+    R4.at<double>(2, 0), R4.at<double>(2, 1), R4.at<double>(2, 2), t4.at<double>(2, 0)
+  );
+    P4 = intrinsics.Left.K * P4;
+    std::cout << "Wanted to see this----------------" << std::endl;
+    std::cout << t4 << std::endl;
+    std::cout << t << std::endl;
+
+
     Pose pose4(R4, t4, P4);
 
     cv::triangulatePoints(P0, P4, cam0Pnts, cam1Pnts, pnts3D);

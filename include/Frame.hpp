@@ -23,9 +23,10 @@ class Frame : public Image {
             Sophus::SE3d identPose(R, t);
             this->pose = identPose;
         }
-        void setPose(Sophus::SE3d &pose_);
+        void setPose(Sophus::SE3d pose_);
         Sophus::SE3d getPose();
-        static std::shared_ptr<Frame> CreateFrame();
+        static unsigned long createFrameID();
+        Vec3 world2Camera(const Vec3 &mp3D, const Sophus::SE3d &pose_, const cv::Mat &K);
     private:
         std::mutex poseMutex; //lock whenever accesing/writing to the object.
 
