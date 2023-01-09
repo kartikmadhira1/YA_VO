@@ -15,6 +15,7 @@ class Feature {
         std::weak_ptr<MapPoint> mapPoint;
         Feature(){}
         Feature(std::shared_ptr<Frame> _frame, const cv::Point2d &_kp) : frame(_frame), kp(_kp) {}
+        bool isOutlier = false;
 };
 
 

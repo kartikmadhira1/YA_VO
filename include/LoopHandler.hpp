@@ -52,7 +52,8 @@ class LoopHandler {
         _3DHandler handler3D;
         // Relative motion between last and current frame
         Sophus::SE3d relativeMotion;
-      
+
+        void track();
         // Gather an image from the path train
         Frame::ptr getNextFrame();
         // takes a single step of adding a frame to the pipeline
@@ -65,10 +66,10 @@ class LoopHandler {
         bool buildInitMap();
         // run VO
         void runVO();
+        // Track previous frame and coint inliers
+        int trackLastFrame();
+        int optimizePoseOnly();
         // triangulate points
-        // Track previous frame 
-        void trackLastFrame();
-        Sophus::SE3d optimizePoseOnly(CV3DPoints pts3D, CV2DPoints camPts, cv::Mat K);
         CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
                             const std::vector<Matches> filtMatches);
 
