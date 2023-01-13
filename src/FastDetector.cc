@@ -196,7 +196,7 @@ void FastDetector::convolve2d(const Image &img, cv::Mat &kernel, cv::Mat &output
             output.at<float>(i-int(kernelSize/2), j-int(kernelSize/2)) = sum;
         }
     }
-    cv::imwrite("output.jpg", output);
+    // cv::imwrite("output.jpg", output);
 }
 
 
@@ -241,24 +241,17 @@ void FastDetector::gaussianBlur(const Image &img, int sigma, cv::Mat &outImage) 
 }
 
 
-float FastDetector::getHarrisCornerResponse(const Image &img, int x, int y) {
+float FastDetector::getHarrisCornerResponse(const Image &img, int x, int y, const cv::Mat &Ix, const cv::Mat &Iy) {
     // 1. Convolve image with x and y derivative kernels Ix, Iy
     // 2. Compute Ix^2, Iy^2, Ix*Iy
     // 3. 
-    cv::Mat Ix = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
-    cv::Mat Iy = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
-    preComputeHarris(img, Ix, Iy);
 
     cv::Mat Ix2 = Ix.mul(Ix);
     cv::Mat Iy2 = Iy.mul(Iy);
     cv::Mat Ixy = Ix.mul(Iy);
 
     cv::Mat M = cv::Mat::zeros(2, 2, CV_32FC1);
-    // for (int i=1;i<Ix.rows;i++) {
-    //         for (int j=1;j<Ix.cols;j++) {
-    //             std::cout << Ix.at<float>(i, j) << std::endl;
-    //         }
-    // }
+
     for (int i=x-1;i<=x+1;i++) {
         for (int j=y-1;j<=y+1;j++) {
             M.at<float>(0, 0) += Ix2.at<float>(i, j);
@@ -293,11 +286,20 @@ std::vector<cv::Point> FastDetector::getFastFeatures(const Image &img) {
     // uint8_t pixelVal = (uint8_t)img.rawImage.data;
     std::cout << "sicr: " <<  img.rawImage.rows << std::endl;
     std::cout << img.rawImage.cols << std::endl;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+
+    // preCompute harris features
+    cv::Mat Ix = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
+    cv::Mat Iy = cv::Mat::zeros(img.rawImage.rows, img.rawImage.cols, CV_32FC1);
+    preComputeHarris(img, Ix, Iy);
+
+
     for (int i=4;i<img.rawImage.rows-4;i++) {
         for(int j=4;j<img.rawImage.cols-4;j++) {
             uint8_t centPixel = img.getPixelVal(i, j);
-            std::vector<cv::Point> circlePoints = getBresenhamCirclePoints(img, i, j);
 
+            std::vector<cv::Point> circlePoints = getBresenhamCirclePoints(img, i, j);
             // Check conditions
             cv::Point P1 = circlePoints[0];
             cv::Point P8 = circlePoints[7];
@@ -317,7 +319,7 @@ std::vector<cv::Point> FastDetector::getFastFeatures(const Image &img) {
 
                     if (checkContiguousPixels(centPixel, circlePoints, img)) {
                         // This is a valid corner
-                        float corScore = getHarrisCornerResponse(img, i, j);
+                        float corScore = getHarrisCornerResponse(img, i, j, Ix, Iy);
                         FastFeature newFeature(cv::Point(i, j), corScore);
                         retCorners.push_back(newFeature);
                     } else {
@@ -331,11 +333,20 @@ std::vector<cv::Point> FastDetector::getFastFeatures(const Image &img) {
 
         }
     }
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    std::chrono::duration<double> timeUsed1 = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+    std::cout << "Looping cost time: " << timeUsed1.count() << " seconds." << std::endl;
+
     // sort the corners based on the score
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+
     std::sort(retCorners.begin(),  retCorners.end(), [](const FastFeature &a, const FastFeature &b) {
         return a.cornerResponse > b.cornerResponse;
     });
-    
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> timeUsed2 = std::chrono::duration_cast<std::chrono::duration<double>>(t4 - t3);
+    std::cout << "sorting cost time: " << timeUsed2.count() << " seconds." << std::endl;
     
     std::vector<cv::Point> retCornersPoints;
 

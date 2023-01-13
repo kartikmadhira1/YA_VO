@@ -7,6 +7,7 @@
 #include <string>
 #include <ctype.h>
 #include <mutex>
+#include <chrono>
 #include <sophus/se3.hpp>
 #include <Eigen/Core>
 #include <boost/filesystem.hpp>

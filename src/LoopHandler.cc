@@ -208,9 +208,19 @@ bool LoopHandler::takeVOStep() {
 
 void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
     // Get FAST features and have keypoints acc. to harris responses
+    // time these twi things
+    chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
     auto features = fd.getFastFeatures(*_frame);
+    chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    chrono::duration<double> timeUsed1 = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    cout << "Feat extraction cost time: " << timeUsed1.count() << " seconds." << endl;
+
     // Compute BRIEF features
+    chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
     brief.computeBrief(features, *_frame);
+    chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
+    chrono::duration<double> timeUsed2 = chrono::duration_cast<chrono::duration<double>>(t4 - t3);
+    cout << "Descriptor generation cost time: " << timeUsed2.count() << " seconds." << endl;
     // Add features to frame
     
 }
