@@ -95,10 +95,118 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
     }
     else if (status == voStatus::TRACKING) {
         // Map has already been built, now track the features
-        track(); 
+        bool trackSuccess = track();
+        // bool reinitSuccess = reinitialize();
+        if (!trackSuccess) {
+            bool reinitSuccess = reinitialize();
+            if(viz) {
+                viz->addCurrentFrame(currentFrame);
+                viz->updateMap();
+            }
+            std::cout << "RESET successful" << std::endl;
+        }
+    }
+    else if (status == voStatus::RESET) {
+        bool reinitSuccess = reinitialize();
+        if (reinitSuccess) {
+            status = voStatus::TRACKING;
+            if(viz) {
+                viz->addCurrentFrame(currentFrame);
+                viz->updateMap();
+            }
+            std::cout << "RESET successful" << std::endl;
+        }
     }
     lastFrame = currentFrame;
 }
+
+
+
+bool LoopHandler::reinitialize() {
+
+    std::vector<Matches> matches = brief.matchFeatures(*currentFrame, *lastFrame);
+    std::vector<Matches> filterMatches;
+
+    brief.removeOutliers(matches, filterMatches, 20.0);
+    // adding as features only those points that have been matched and filtered out
+    for (auto &eachMatch : filterMatches) {
+        Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
+        lastFrame->features.push_back(feat1);
+        Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
+        currentFrame->features.push_back(feat2);
+    }
+    cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
+    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
+    // Essential matrix from fundamental matrix
+    cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
+    // Get the pose of the second camera
+    // Pose p = handler3D.disambiguateRT(E, filterMatches);
+
+    cv::Mat R; cv::Mat t;
+    CV2DPoints lastFramePts;
+    CV2DPoints currFramePts;
+   
+
+    for (int i = 0; i < filterMatches.size(); i++) {
+        lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
+        currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
+    }
+
+    cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
+
+
+    Eigen::Matrix<double, 3, 3> REigen ;
+
+    REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
+    R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
+    R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
+
+    Eigen::Matrix<double, 3, 1>  tEigen ;
+
+    tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
+
+
+
+    Sophus::SE3d currPose(REigen, tEigen);
+    currPose = currPose * lastFrame->pose;
+    currentFrame->setPose(currPose);
+
+    // insert current and last frame into the map
+    // map->insertKeyFrame(lastFrame);
+    map->insertKeyFrame(currentFrame);
+
+    //triangulate based on the last and currentFrame
+    CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
+
+    // Points used in 3d triangulation = same as the ones matched after outlier removal
+    std::cout << new3dPoints.size() << "<---- number of points triangulated!" << std::endl;
+    if (new3dPoints.size() < 5) {
+        return false;
+    }
+    // now empty the active L and F frames
+    map->resetActive();
+
+
+    for (int i=0;i<new3dPoints.size();i++) {
+        MapPoint::ptr newPt = MapPoint::createMapPoint();
+        // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
+        newPt->setPos(new3dPoints[i]);
+        // add features that map to the 3d point
+        newPt->addObservation(lastFrame->features[i]);
+        newPt->addObservation(currentFrame->features[i]);
+        // insert 3d points that are part of the features in frame
+        lastFrame->features[i]->mapPoint = newPt;
+        currentFrame->features[i]->mapPoint = newPt;
+        map->insertMapPoint(newPt);
+    }
+
+    relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
+
+    return true;
+
+}
+
+
 
 
 
@@ -109,9 +217,7 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
                     
 */
 
-
-
-void LoopHandler::track() {
+bool LoopHandler::track() {
 
     // Initial guess for the new pose based on motion 
     if (lastFrame) {
@@ -122,17 +228,21 @@ void LoopHandler::track() {
 
     int optimizedInliers = optimizePoseOnly();
 
-    // if (optimizedInliers > 7) {
-    status = voStatus::TRACKING;
-    // }
+    if (optimizedInliers < 9) {
+        status = voStatus::RESET;
+        std::cout << "tracking failed" << std::endl;
+        return false;
+    }
 
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
     map->insertKeyFrame(currentFrame);
+
     if(viz) {
         viz->addCurrentFrame(currentFrame);
         viz->updateMap();
     }
 
+    return true;
 }
 
 
@@ -227,15 +337,13 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
 
 
 void LoopHandler::runVO() {
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
-    takeVOStep();
+    
+
+    while(1) {
+        if (takeVOStep() == false) {
+            break;
+        }        
+    }
 
 
 }
@@ -358,7 +466,9 @@ int LoopHandler::optimizePoseOnly() {
             Eigen::Vector2d point2d;
             Vec3 pos = mp->getPos();
             point3d << pos.coeff(0), pos.coeff(1), pos.coeff(2);
-            point2d << eachKp->kp.x, eachKp->kp.y;
+            point2d << eachKp->kp.y, eachKp->kp.x;
+            std::cout << "-----3D point" << point3d << std::endl;
+            std::cout << "-----2D point" << point2d << std::endl;
             EdgeProjection *edge = new EdgeProjection(point3d, KEigen);
             edge->setId(index);
             edge->setVertex(0, vertexPose);

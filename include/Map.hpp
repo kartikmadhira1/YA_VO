@@ -20,13 +20,17 @@ class Map {
         void insertKeyFrame(Frame::ptr fr);
         void insertMapPoint(MapPoint::ptr mp);
         FramesType getActiveFrames();
+        FramesType getFrames();
         LandMarksType getActiveMPs();
+        LandMarksType getMPs();
         static Map::ptr createMap();
+        bool resetActive();
     private:
         std::mutex mapLock;
         LandMarksType landmarks;
         FramesType frames;
-
+        LandMarksType activeL;
+        FramesType activeF;
         Frame::ptr currentFrame = nullptr;
 
 };

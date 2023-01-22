@@ -26,11 +26,11 @@ void Viewer::setMap(Map::ptr _map) {
 
 void Viewer::updateMap() {
     std::unique_lock<std::mutex> viewLock(viewerMutex);
-    frames = this->map->getActiveFrames();
+    frames = this->map->getFrames();
     for (auto &eachFrame:frames) {
         std::cout << "New frame no:" << eachFrame.second->pose.matrix() << std::endl;
     }
-    mps = this->map->getActiveMPs();
+    mps = this->map->getMPs();
 }
 
 

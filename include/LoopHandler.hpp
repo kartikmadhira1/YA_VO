@@ -22,7 +22,7 @@
 typedef std::vector<cv::Point2d> CV2DPoints;
 typedef std::vector<cv::Point3d> CV3DPoints;
 
-enum voStatus {INIT, TRACKING, ERROR};
+enum voStatus {INIT, TRACKING, ERROR, RESET};
 
 class LoopHandler {
     private:
@@ -53,7 +53,7 @@ class LoopHandler {
         // Relative motion between last and current frame
         Sophus::SE3d relativeMotion;
 
-        void track();
+        bool track();
         // Gather an image from the path train
         Frame::ptr getNextFrame();
         // takes a single step of adding a frame to the pipeline
@@ -73,6 +73,8 @@ class LoopHandler {
         CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
                             const std::vector<Matches> filtMatches);
 
+        // reinit
+        bool reinitialize();
 
         cv::Mat sophus2ProjMat( Frame::ptr _frame);
         std::string getSeqNo();
