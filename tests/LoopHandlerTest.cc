@@ -66,10 +66,18 @@
 
 
 
-TEST(LoopHandler, checkVOStep) {
-    std::string configPath = "../config/KITTI.json";
-    LoopHandler Lh(configPath);
-    Lh.handler3D.intrinsics.Left.printK();
-    Lh.viz->viewerRun();
-    Lh.runVO();
+// TEST(LoopHandler, checkVOStep) {
+//     std::string configPath = "../config/KITTI.json";
+//     LoopHandler Lh(configPath);
+//     Lh.handler3D.intrinsics.Left.printK();
+//     Lh.viz->viewerRun();
+//     Lh.runVO();
+// }
+
+
+
+
+
+TEST(LoopHandler, world2camera) {
+    
 }

@@ -15,7 +15,6 @@ void Viewer::close() {
 
 void Viewer::addCurrentFrame(Frame::ptr frame) {
     std::unique_lock<std::mutex> viewLock(viewerMutex);
-    std::cout << "new frame added" << std::endl;
     currentFrame = frame;
 }
 
@@ -27,9 +26,6 @@ void Viewer::setMap(Map::ptr _map) {
 void Viewer::updateMap() {
     std::unique_lock<std::mutex> viewLock(viewerMutex);
     frames = this->map->getFrames();
-    for (auto &eachFrame:frames) {
-        std::cout << "New frame no:" << eachFrame.second->pose.matrix() << std::endl;
-    }
     mps = this->map->getMPs();
 }
 

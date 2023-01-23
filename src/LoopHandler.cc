@@ -220,6 +220,8 @@ bool LoopHandler::reinitialize() {
 bool LoopHandler::track() {
 
     // Initial guess for the new pose based on motion 
+    // Is this the right way? check if relative motion has already been set? 
+    // yes, checked relative motion from previous initial build
     if (lastFrame) {
         currentFrame->setPose(relativeMotion*lastFrame->pose);
     }
@@ -258,9 +260,20 @@ int LoopHandler::trackLastFrame() {
         if (auto mapPtr = eachKp->mapPoint.lock() ) {
             auto mp = mapPtr->position;
             // project mp on the current pose
+            // take a step back and check if the current world points actually map to same image coordinates
+            // step 1 - write all points to image 1, 
+            // step 2 - triangulate points with image 2
+            // step 3 - world2camera method to project all triangulated points to image 1.
+            // step 4 - check diff between both the image.
             auto currKp = currentFrame->world2Camera(mp, currentFrame->pose, handler3D.intrinsics.Left.getK());
             // check the points fall within the boundry of the image
-            cv::Point2d newPts = cv::Point2d(currKp.coeff(0)/currKp.coeff(2), currKp.coeff(1)/currKp.coeff(2));
+
+
+
+
+
+            // Checking in here with the x and y swap because it's getting inputted into opencv function
+            cv::Point2d newPts = cv::Point2d(currKp.coeff(1)/currKp.coeff(2), currKp.coeff(0)/currKp.coeff(2));
             lastFrameKpt.push_back(newPts);
             currFrameKpt.push_back(eachKp->kp);
 
@@ -269,11 +282,9 @@ int LoopHandler::trackLastFrame() {
     // calculate the optical flow between last and current frame 
     std::vector<uchar> status;
     cv::Mat error;
-    std::cout << type2str(lastFrame->rawImage.type()) << std::endl;
-    std::cout << type2str(currentFrame->rawImage.type()) << std::endl;
-
+   
     cv::calcOpticalFlowPyrLK(lastFrame->rawImage, currentFrame->rawImage, lastFrameKpt, currFrameKpt,
-                                status, error, cv::Size(50, 50), 3,
+                                status, error, cv::Size(21, 21), 3,
                                 cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,0.01),
                                 cv::OPTFLOW_USE_INITIAL_FLOW);
     
@@ -283,7 +294,6 @@ int LoopHandler::trackLastFrame() {
 
     for (int i=0; i<status.size();i++) {
         if(status[i]) {
-            std::cout << "status good ! " << i << std::endl;
             Feature::ptr feat = std::make_shared<Feature>(currentFrame, cv::Point2d(currFrameKpt[i].x, currFrameKpt[i].y));
             // add feat to corresponding mappoint
             feat->mapPoint = lastFrame->features[i]->mapPoint;
@@ -293,8 +303,9 @@ int LoopHandler::trackLastFrame() {
         }
     }
 
+    std::cout << "Amount of good features is: " << goodFeatures << std::endl;
+    std::cout << "Amount of total features is: " << status.size() << std::endl;
 
-   
     return goodFeatures;
 
 }
@@ -391,8 +402,6 @@ bool LoopHandler::buildInitMap() {
 
     tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
 
-
-
     Sophus::SE3d currPose(REigen, tEigen);
     currentFrame->setPose(currPose);
 
@@ -404,6 +413,8 @@ bool LoopHandler::buildInitMap() {
     CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
 
     // Points used in 3d triangulation = same as the ones matched after outlier removal
+
+
 
     for (int i=0;i<new3dPoints.size();i++) {
         MapPoint::ptr newPt = MapPoint::createMapPoint();
@@ -417,6 +428,7 @@ bool LoopHandler::buildInitMap() {
         currentFrame->features[i]->mapPoint = newPt;
         map->insertMapPoint(newPt);
     }
+
 
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
 
@@ -467,8 +479,7 @@ int LoopHandler::optimizePoseOnly() {
             Vec3 pos = mp->getPos();
             point3d << pos.coeff(0), pos.coeff(1), pos.coeff(2);
             point2d << eachKp->kp.y, eachKp->kp.x;
-            std::cout << "-----3D point" << point3d << std::endl;
-            std::cout << "-----2D point" << point2d << std::endl;
+        
             EdgeProjection *edge = new EdgeProjection(point3d, KEigen);
             edge->setId(index);
             edge->setVertex(0, vertexPose);
@@ -516,7 +527,6 @@ int LoopHandler::optimizePoseOnly() {
 
     currentFrame->setPose(vertexPose->estimate());
 
-    std::cout << "Current pose " << currentFrame->pose.matrix();
     std::cout << "Outlier/Inlier count" << outlierCount << "/" << features.size()-outlierCount << std::endl;
 
     // remove all map points that are outliers
