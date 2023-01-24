@@ -36,8 +36,8 @@ class FastDetector {
         FastDetector(int _minDetectionThresold, uint8_t _intensityThreshold) {
             this->minDetectionThreshold=_minDetectionThresold;
             this->bresRadius=3;
-            this->intensityThreshold=100;
-            this->fastCornerNumThreshold=300;
+            this->intensityThreshold=40;
+            this->fastCornerNumThreshold=3000;
             this->harrisThreshold=2;
         }
 

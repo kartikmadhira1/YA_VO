@@ -168,6 +168,9 @@ bool LoopHandler::reinitialize() {
 
 
     Sophus::SE3d currPose(REigen, tEigen);
+
+    // this is contentious, if its reset what transformation matrices do you use?
+
     currPose = currPose * lastFrame->pose;
     currentFrame->setPose(currPose);
 
@@ -186,11 +189,13 @@ bool LoopHandler::reinitialize() {
     // now empty the active L and F frames
     map->resetActive();
 
-
+    // Here the 3d points MUST be w.r.t to the initial position!!!!!!
     for (int i=0;i<new3dPoints.size();i++) {
         MapPoint::ptr newPt = MapPoint::createMapPoint();
         // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
-        newPt->setPos(new3dPoints[i]);
+        Vec3  pos(new3dPoints[i].x , new3dPoints[i].y, new3dPoints[i].z);
+        pos = currentFrame->pose.inverse()*pos;
+        newPt->setPos(pos);
         // add features that map to the 3d point
         newPt->addObservation(lastFrame->features[i]);
         newPt->addObservation(currentFrame->features[i]);
@@ -230,7 +235,7 @@ bool LoopHandler::track() {
 
     int optimizedInliers = optimizePoseOnly();
 
-    if (optimizedInliers < 9) {
+    if (optimizedInliers < 15) {
         status = voStatus::RESET;
         std::cout << "tracking failed" << std::endl;
         return false;
@@ -273,7 +278,7 @@ int LoopHandler::trackLastFrame() {
 
 
             // Checking in here with the x and y swap because it's getting inputted into opencv function
-            cv::Point2d newPts = cv::Point2d(currKp.coeff(1)/currKp.coeff(2), currKp.coeff(0)/currKp.coeff(2));
+            cv::Point2d newPts = cv::Point2d(currKp.coeff(0)/currKp.coeff(2), currKp.coeff(1)/currKp.coeff(2));
             lastFrameKpt.push_back(newPts);
             currFrameKpt.push_back(eachKp->kp);
 
@@ -282,16 +287,18 @@ int LoopHandler::trackLastFrame() {
     // calculate the optical flow between last and current frame 
     std::vector<uchar> status;
     cv::Mat error;
-   
+    cv::Mat mask = cv::Mat::zeros(lastFrame->rawImage.size(), lastFrame->rawImage.type());
     cv::calcOpticalFlowPyrLK(lastFrame->rawImage, currentFrame->rawImage, lastFrameKpt, currFrameKpt,
-                                status, error, cv::Size(21, 21), 3,
-                                cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,0.01),
+                                status, error, cv::Size(21, 21), 5,
+                                cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 20,0.03),
                                 cv::OPTFLOW_USE_INITIAL_FLOW);
     
 
     int goodFeatures = 0;
     // add features that follow the optical flow
+    cv::Mat currImgcopy;
 
+    currentFrame->rawImage.copyTo(currImgcopy);
     for (int i=0; i<status.size();i++) {
         if(status[i]) {
             Feature::ptr feat = std::make_shared<Feature>(currentFrame, cv::Point2d(currFrameKpt[i].x, currFrameKpt[i].y));
@@ -299,9 +306,14 @@ int LoopHandler::trackLastFrame() {
             feat->mapPoint = lastFrame->features[i]->mapPoint;
             // add feature to the mapPoint
             currentFrame->features.push_back(feat);
+            cv::line(mask,cv::Point2i(currFrameKpt[i].y,currFrameKpt[i].x) , cv::Point2i(lastFrameKpt[i].y,lastFrameKpt[i].x) , cv::Scalar(0,255,0), 2);
+            cv::circle(currImgcopy, cv::Point2i(currFrameKpt[i].y,currFrameKpt[i].x), 5, cv::Scalar(0,255,0), -1);
             goodFeatures++;            
         }
     }
+    cv::Mat copyImg;
+    cv::add(currImgcopy, mask, copyImg);
+    cv::imwrite("optical" + std::to_string(currentFrame->frameID) + ".png", copyImg);
 
     std::cout << "Amount of good features is: " << goodFeatures << std::endl;
     std::cout << "Amount of total features is: " << status.size() << std::endl;
@@ -419,6 +431,7 @@ bool LoopHandler::buildInitMap() {
     for (int i=0;i<new3dPoints.size();i++) {
         MapPoint::ptr newPt = MapPoint::createMapPoint();
         // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
+       
         newPt->setPos(new3dPoints[i]);
         // add features that map to the 3d point
         newPt->addObservation(lastFrame->features[i]);
@@ -477,9 +490,12 @@ int LoopHandler::optimizePoseOnly() {
             Eigen::Vector3d point3d;
             Eigen::Vector2d point2d;
             Vec3 pos = mp->getPos();
+            
             point3d << pos.coeff(0), pos.coeff(1), pos.coeff(2);
-            point2d << eachKp->kp.y, eachKp->kp.x;
-        
+            // std::cout << "3d points " << pos.coeff(0) << " " << pos.coeff(1)  << " " << pos.coeff(2)  << std::endl;
+            point2d << eachKp->kp.x, eachKp->kp.y;
+            // std::cout << "2d points " << eachKp->kp.x  << " " << eachKp->kp.y << " " << std::endl;
+
             EdgeProjection *edge = new EdgeProjection(point3d, KEigen);
             edge->setId(index);
             edge->setVertex(0, vertexPose);
@@ -533,7 +549,7 @@ int LoopHandler::optimizePoseOnly() {
 
     for (auto &eachFeat : features) {
         if (eachFeat->isOutlier) {
-            eachFeat->mapPoint.reset();
+            // eachFeat->mapPoint.reset();
             eachFeat->isOutlier = false;
         }
     }

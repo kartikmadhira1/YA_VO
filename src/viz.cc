@@ -63,6 +63,10 @@ void Viewer::plotterLoop() {
             cv::imshow("image", img);
             cv::waitKey(1);
         }
+        const float red[3] = {1.0, 0, 0};
+        for (auto &eachFrame : frames) {
+            drawFrame(eachFrame.second, red);
+        }
 
         if (map) {
             drawMPs();
@@ -148,9 +152,9 @@ void Viewer::drawFrame(Frame::ptr frame, const float *color) {
 
 void Viewer::drawMPs() {
     const float red[3] = {1.0, 0, 0};
-    for (auto& kf : frames) {
-        drawFrame(kf.second, red);
-    }
+    // for (auto& kf : frames) {
+    //     drawFrame(kf.second, red);
+    // }
 
     glPointSize(2);
     glBegin(GL_POINTS);

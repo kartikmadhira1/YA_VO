@@ -28,8 +28,21 @@ Vec3 Frame::world2Camera(const Vec3 &mp3D, const Sophus::SE3d &pose_, const cv::
 }
 
 
+// Vec3 Frame::world2Origin(const Vec3 &mp3D, const Sophus::SE3d &pose_) {
+
+//     Eigen::Matrix<double, 4, 1> homo3DPt;
+//     homo3DPt << mp3D.coeff(0), mp3D.coeff(1), mp3D.coeff(2), 1;
+//     // std::cout << "Vec3d point" <<  mp3D << std::endl;
+//     // std::cout << "Vec3d point" <<  homo3DPt << std::endl;
+  
+//     Vec3 3dPoints = KEigen*pose_.matrix3x4()*homo3DPt;
+//     return camPoints;
+// }
+
+
 unsigned long Frame::createFrameID() {
     static int frameID_ = 0;
     frameID_++;
     return frameID_;
 }
+

@@ -80,15 +80,16 @@ class EdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose>
             Eigen::Vector3d pos_cam = T * _pos3d;
             double fx = _K(0, 0);
             double fy = _K(1, 1);
-            double cx = _K(0, 2);
-            double cy = _K(1, 2);
             double X = pos_cam[0];
             double Y = pos_cam[1];
             double Z = pos_cam[2];
+            double Zinv = 1.0 / (Z + 1e-18);
+            double Zinv2 = Zinv * Zinv;
             double Z2 = Z * Z;
-            _jacobianOplusXi
-            << -fx / Z, 0, fx * X / Z2, fx * X * Y / Z2, -fx - fx * X * X / Z2, fx * Y / Z,
-            0, -fy / Z, fy * Y / (Z * Z), fy + fy * Y * Y / Z2, -fy * X * Y / Z2, -fy * X / Z;
+            _jacobianOplusXi << -fx * Zinv, 0, fx * X * Zinv2, fx * X * Y * Zinv2,
+            -fx - fx * X * X * Zinv2, fx * Y * Zinv, 0, -fy * Zinv,
+            fy * Y * Zinv2, fy + fy * Y * Y * Zinv2, -fy * X * Y * Zinv2,
+            -fy * X * Zinv;
         }
 
         virtual bool read(istream &in) override {}
