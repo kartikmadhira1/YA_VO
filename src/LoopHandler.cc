@@ -121,6 +121,46 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
 }
 
 
+/*
+    LAST FRAME ->GET FEATURES -> GET MAP POINTS -> PROJECT TO CURRENT FRAME -> GET OPTICAL FLOW BETWEEN PREVIOUS AND CURRENT FRAME
+    -> IF STATUS FOR FEATURE IS GOOD -> ADD AS A NEW FEATURE -> ADD CORRESPONDING PREV. MAP POINT TO THIS NEW FEATURE
+    -> ADD THIS NEW FEATURE TO CURRENT FRAME -> KEEP COUNT OF NEW FEATURES ADDED
+                    
+*/
+
+bool LoopHandler::track() {
+
+    // Initial guess for the new pose based on motion 
+    // Is this the right way? check if relative motion has already been set? 
+    // yes, checked relative motion from previous initial build
+    std::cout << "Tracking started" << std::endl;
+    if (lastFrame) {
+        currentFrame->setPose(relativeMotion*lastFrame->pose);
+    }
+
+    int goodInliers = trackLastFrame();
+
+
+    int optimizedInliers = optimizePoseOnly();
+
+    map->insertKeyFrame(currentFrame);
+    
+    if (optimizedInliers < 100) {
+        std::cout << "tracking failed" << std::endl;
+        return false;
+    }
+
+    relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
+    // map->insertKeyFrame(currentFrame);
+
+    if(viz) {
+        viz->addCurrentFrame(currentFrame);
+        viz->updateMap();
+    }
+
+    return true;
+}
+
 
 bool LoopHandler::reinitialize() {
 
@@ -128,55 +168,56 @@ bool LoopHandler::reinitialize() {
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
-    // adding as features only those points that have been matched and filtered out
+    // // adding as features only those points that have been matched and filtered out
     for (auto &eachMatch : filterMatches) {
         Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
         lastFrame->features.push_back(feat1);
         Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
         currentFrame->features.push_back(feat2);
     }
-    cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
-    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
-    // Essential matrix from fundamental matrix
-    cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
-    // Get the pose of the second camera
-    // Pose p = handler3D.disambiguateRT(E, filterMatches);
+    // cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
+    // handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
+    // // Essential matrix from fundamental matrix
+    // cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
+    // // Get the pose of the second camera
+    // // Pose p = handler3D.disambiguateRT(E, filterMatches);
 
-    cv::Mat R; cv::Mat t;
-    CV2DPoints lastFramePts;
-    CV2DPoints currFramePts;
+    // cv::Mat R; cv::Mat t;
+    // CV2DPoints lastFramePts;
+    // CV2DPoints currFramePts;
    
 
-    for (int i = 0; i < filterMatches.size(); i++) {
-        lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
-        currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
-    }
+    // for (int i = 0; i < filterMatches.size(); i++) {
+    //     lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
+    //     currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
+    // }
 
-    cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
-
-
-    Eigen::Matrix<double, 3, 3> REigen ;
-
-    REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
-    R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
-    R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
-
-    Eigen::Matrix<double, 3, 1>  tEigen ;
-
-    tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
+    // cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
 
 
+    // Eigen::Matrix<double, 3, 3> REigen ;
 
-    Sophus::SE3d currPose(REigen, tEigen);
+    // REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
+    // R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
+    // R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
 
-    // this is contentious, if its reset what transformation matrices do you use?
+    // Eigen::Matrix<double, 3, 1>  tEigen ;
 
-    currPose = currPose * lastFrame->pose;
-    currentFrame->setPose(currPose);
+    // tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
+
+
+
+    // Sophus::SE3d currPose(REigen, tEigen);
+
+    // // this is contentious, if its reset what transformation matrices do you use?
+
+    // currPose = currPose * lastFrame->pose;
+    // currentFrame->setPose(currPose);
+
+    
 
     // insert current and last frame into the map
     // map->insertKeyFrame(lastFrame);
-    map->insertKeyFrame(currentFrame);
 
     //triangulate based on the last and currentFrame
     CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
@@ -195,6 +236,7 @@ bool LoopHandler::reinitialize() {
         // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
         Vec3  pos(new3dPoints[i].x , new3dPoints[i].y, new3dPoints[i].z);
         pos = currentFrame->pose.inverse()*pos;
+        // std::cout << pos.coeff(0)  << " " << pos.coeff(1) << pos.coeff(2) << std::endl;
         newPt->setPos(pos);
         // add features that map to the 3d point
         newPt->addObservation(lastFrame->features[i]);
@@ -215,42 +257,7 @@ bool LoopHandler::reinitialize() {
 
 
 
-/*
-    LAST FRAME ->GET FEATURES -> GET MAP POINTS -> PROJECT TO CURRENT FRAME -> GET OPTICAL FLOW BETWEEN PREVIOUS AND CURRENT FRAME
-    -> IF STATUS FOR FEATURE IS GOOD -> ADD AS A NEW FEATURE -> ADD CORRESPONDING PREV. MAP POINT TO THIS NEW FEATURE
-    -> ADD THIS NEW FEATURE TO CURRENT FRAME -> KEEP COUNT OF NEW FEATURES ADDED
-                    
-*/
 
-bool LoopHandler::track() {
-
-    // Initial guess for the new pose based on motion 
-    // Is this the right way? check if relative motion has already been set? 
-    // yes, checked relative motion from previous initial build
-    if (lastFrame) {
-        currentFrame->setPose(relativeMotion*lastFrame->pose);
-    }
-
-    int goodInliers = trackLastFrame();
-
-    int optimizedInliers = optimizePoseOnly();
-
-    if (optimizedInliers < 15) {
-        status = voStatus::RESET;
-        std::cout << "tracking failed" << std::endl;
-        return false;
-    }
-
-    relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
-    map->insertKeyFrame(currentFrame);
-
-    if(viz) {
-        viz->addCurrentFrame(currentFrame);
-        viz->updateMap();
-    }
-
-    return true;
-}
 
 
 
@@ -272,8 +279,7 @@ int LoopHandler::trackLastFrame() {
             // step 4 - check diff between both the image.
             auto currKp = currentFrame->world2Camera(mp, currentFrame->pose, handler3D.intrinsics.Left.getK());
             // check the points fall within the boundry of the image
-
-
+            std::cout << currKp.coeff(0)/currKp.coeff(2) << " " << currKp.coeff(1)/currKp.coeff(2) << std::endl;
 
 
 
@@ -549,7 +555,7 @@ int LoopHandler::optimizePoseOnly() {
 
     for (auto &eachFeat : features) {
         if (eachFeat->isOutlier) {
-            // eachFeat->mapPoint.reset();
+            eachFeat->mapPoint.reset();
             eachFeat->isOutlier = false;
         }
     }

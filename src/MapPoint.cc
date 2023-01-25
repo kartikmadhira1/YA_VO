@@ -20,6 +20,8 @@ void MapPoint::setPos(const cv::Point3d pt) {
 void MapPoint::setPos(const Vec3 &pos) {
     //lock the mutex first 
     std::unique_lock<std::mutex> lock(mapPointMutex);
+    this->position << pos.coeff(0) ,pos.coeff(1), pos.coeff(2);
+
 }
 
 Vec3 MapPoint::getPos() {
