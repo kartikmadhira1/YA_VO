@@ -24,7 +24,7 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     }
     generatePathTrain();
     _trainIterator = leftPathTrain.begin();
-
+    gftt_ = cv::ORB::create(4000);
 
     map = Map::createMap();
     viz = std::make_shared<Viewer>();
@@ -140,12 +140,14 @@ bool LoopHandler::track() {
 
     int goodInliers = trackLastFrame();
 
-
+    if (goodInliers < 2) {
+        return false;
+    }
     int optimizedInliers = optimizePoseOnly();
 
     map->insertKeyFrame(currentFrame);
     
-    if (optimizedInliers < 100) {
+    if (optimizedInliers < 40) {
         std::cout << "tracking failed" << std::endl;
         return false;
     }
@@ -164,7 +166,7 @@ bool LoopHandler::track() {
 
 bool LoopHandler::reinitialize() {
 
-    std::vector<Matches> matches = brief.matchFeatures(*currentFrame, *lastFrame);
+    std::vector<Matches> matches = brief.matchFeatures(*lastFrame, *currentFrame);
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
@@ -232,19 +234,21 @@ bool LoopHandler::reinitialize() {
 
     // Here the 3d points MUST be w.r.t to the initial position!!!!!!
     for (int i=0;i<new3dPoints.size();i++) {
-        MapPoint::ptr newPt = MapPoint::createMapPoint();
-        // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
-        Vec3  pos(new3dPoints[i].x , new3dPoints[i].y, new3dPoints[i].z);
-        pos = currentFrame->pose.inverse()*pos;
-        // std::cout << pos.coeff(0)  << " " << pos.coeff(1) << pos.coeff(2) << std::endl;
-        newPt->setPos(pos);
-        // add features that map to the 3d point
-        newPt->addObservation(lastFrame->features[i]);
-        newPt->addObservation(currentFrame->features[i]);
-        // insert 3d points that are part of the features in frame
-        lastFrame->features[i]->mapPoint = newPt;
-        currentFrame->features[i]->mapPoint = newPt;
-        map->insertMapPoint(newPt);
+        if (new3dPoints[i].z > 0) {
+            MapPoint::ptr newPt = MapPoint::createMapPoint();
+            // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
+            Vec3  pos(new3dPoints[i].x , new3dPoints[i].y, new3dPoints[i].z);
+            pos = currentFrame->pose.inverse()*pos;
+            // std::cout << pos.coeff(0)  << " " << pos.coeff(1) << pos.coeff(2) << std::endl;
+            newPt->setPos(pos);
+            // add features that map to the 3d point
+            newPt->addObservation(lastFrame->features[i]);
+            newPt->addObservation(currentFrame->features[i]);
+            // insert 3d points that are part of the features in frame
+            lastFrame->features[i]->mapPoint = newPt;
+            currentFrame->features[i]->mapPoint = newPt;
+            map->insertMapPoint(newPt);
+        }
     }
 
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
@@ -263,13 +267,23 @@ bool LoopHandler::reinitialize() {
 
 int LoopHandler::trackLastFrame() {
 
-  
+    // cv::Mat currImgcopy1, currColr1;
+    // cv::Mat currImgcopy2, currColr2;
+
+    // lastFrame->rawImage.copyTo(currImgcopy1);
+    // currentFrame->rawImage.copyTo(currImgcopy2);
+
+    // cv::cvtColor(currImgcopy1, currColr1, cv::COLOR_GRAY2RGB);
+    // cv::cvtColor(currImgcopy2, currColr2, cv::COLOR_GRAY2RGB);
+
     // prepare points for optical flow check
     std::vector<cv::Point2f> lastFrameKpt;
     std::vector<cv::Point2f> currFrameKpt;
-    for (auto &eachKp:lastFrame->features) {
+    int _i = 0;
+    std::vector<int> lastFramePointsIndex;
+    for (int i = 0;i< lastFrame->features.size();i++) {
         // convert the weak ptr to shared with lock 
-        if (auto mapPtr = eachKp->mapPoint.lock() ) {
+        if (auto mapPtr = lastFrame->features[i]->mapPoint.lock() ) {
             auto mp = mapPtr->position;
             // project mp on the current pose
             // take a step back and check if the current world points actually map to same image coordinates
@@ -279,50 +293,90 @@ int LoopHandler::trackLastFrame() {
             // step 4 - check diff between both the image.
             auto currKp = currentFrame->world2Camera(mp, currentFrame->pose, handler3D.intrinsics.Left.getK());
             // check the points fall within the boundry of the image
-            std::cout << currKp.coeff(0)/currKp.coeff(2) << " " << currKp.coeff(1)/currKp.coeff(2) << std::endl;
+            // std::cout << currKp.coeff(0)/currKp.coeff(2) << " " << currKp.coeff(1)/currKp.coeff(2) << std::endl;
 
 
 
-            // Checking in here with the x and y swap because it's getting inputted into opencv function
-            cv::Point2d newPts = cv::Point2d(currKp.coeff(0)/currKp.coeff(2), currKp.coeff(1)/currKp.coeff(2));
-            lastFrameKpt.push_back(newPts);
-            currFrameKpt.push_back(eachKp->kp);
+                // Checking in here with the x and y swap because it's getting inputted into opencv function
+            cv::Point2d newPts = cv::Point2d(currKp.coeff(1)/currKp.coeff(2), currKp.coeff(0)/currKp.coeff(2));
+            
+            if (newPts.x < 0 || newPts.y < 0) {
+                currFrameKpt.push_back(newPts);
+                lastFrameKpt.push_back(cv::Point2d(lastFrame->features[i]->kp.y, lastFrame->features[i]->kp.x));
+                lastFramePointsIndex.push_back(i);
+            }
 
+            // cv::circle(currColr2, cv::Point2i(newPts.y, newPts.x), 5, cv::Scalar(0,255,0), -1);
+            // cv::circle(currColr1, cv::Point2i(eachKp->kp.y, eachKp->kp.x), 5, cv::Scalar(255,0,0), -1);
+            // cv::imwrite("last" + std::to_string(currentFrame->frameID) + std::to_string(_i) + ".png", currColr1);
+            // cv::imwrite("curr" + std::to_string(currentFrame->frameID) + std::to_string(_i) + ".png", currColr2);
+
+            _i++;
         }
     }
     // calculate the optical flow between last and current frame 
-    std::vector<uchar> status;
+    std::vector<uchar> flowStatus;
     cv::Mat error;
     cv::Mat mask = cv::Mat::zeros(lastFrame->rawImage.size(), lastFrame->rawImage.type());
-    cv::calcOpticalFlowPyrLK(lastFrame->rawImage, currentFrame->rawImage, lastFrameKpt, currFrameKpt,
-                                status, error, cv::Size(21, 21), 5,
-                                cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 20,0.03),
-                                cv::OPTFLOW_USE_INITIAL_FLOW);
-    
+
+    try {
+        cv::calcOpticalFlowPyrLK(lastFrame->rawImage, currentFrame->rawImage, lastFrameKpt, currFrameKpt,
+                                    flowStatus, error, cv::Size(33, 33), 3 ,
+                                    cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,0.01),
+                                    0,0.001);
+    } catch (cv::Exception &e) {
+        std::cout << "Caught tracking error, restarting";
+        return false;
+    }
 
     int goodFeatures = 0;
     // add features that follow the optical flow
-    cv::Mat currImgcopy;
+    cv::Mat currImgcopy1, currColr1;
+    cv::Mat currImgcopy2, currColr2;
 
-    currentFrame->rawImage.copyTo(currImgcopy);
-    for (int i=0; i<status.size();i++) {
-        if(status[i]) {
-            Feature::ptr feat = std::make_shared<Feature>(currentFrame, cv::Point2d(currFrameKpt[i].x, currFrameKpt[i].y));
-            // add feat to corresponding mappoint
-            feat->mapPoint = lastFrame->features[i]->mapPoint;
-            // add feature to the mapPoint
-            currentFrame->features.push_back(feat);
-            cv::line(mask,cv::Point2i(currFrameKpt[i].y,currFrameKpt[i].x) , cv::Point2i(lastFrameKpt[i].y,lastFrameKpt[i].x) , cv::Scalar(0,255,0), 2);
-            cv::circle(currImgcopy, cv::Point2i(currFrameKpt[i].y,currFrameKpt[i].x), 5, cv::Scalar(0,255,0), -1);
-            goodFeatures++;            
+    currentFrame->rawImage.copyTo(currImgcopy1);
+    currentFrame->rawImage.copyTo(currImgcopy2);
+
+    cv::cvtColor(currImgcopy1, currColr1, cv::COLOR_GRAY2RGB);
+    cv::cvtColor(currImgcopy2, currColr2, cv::COLOR_GRAY2RGB);
+
+    for (int i=0; i<flowStatus.size();i++) {
+        if(flowStatus.at(i)==1) {
+            // this is wrong//
+              if (auto mapPtr = lastFrame->features[lastFramePointsIndex[i]]->mapPoint.lock()) {
+                    Feature::ptr feat = std::make_shared<Feature>(currentFrame, cv::Point2d(currFrameKpt[i].y, currFrameKpt[i].x));
+
+                    feat->mapPoint = mapPtr;
+                    // add feature to the mapPoint
+                    currentFrame->features.push_back(feat);
+                    std::cout << mapPtr->getPos() << std::endl;
+                    // cv::line(mask,cv::Point2i(currFrameKpt[i].y,currFrameKpt[i].x) , cv::Point2i(lastFrameKpt[i].y,lastFrameKpt[i].x) , cv::Scalar(0,255,0), 2);
+                    auto currKp = currentFrame->world2Camera(mapPtr->getPos() , currentFrame->pose, handler3D.intrinsics.Left.getK());
+                    // check the points fall within the boundry of the image
+                    // std::cout << currKp.coeff(0)/currKp.coeff(2) << " " << currKp.coeff(1)/currKp.coeff(2) << std::endl;
+
+
+
+                        // Checking in here with the x and y swap because it's getting inputted into opencv function
+                    cv::Point2d newPts = cv::Point2d(currKp.coeff(1)/currKp.coeff(2), currKp.coeff(0)/currKp.coeff(2));
+
+                    cv::circle(currColr1, cv::Point2i(currFrameKpt[i].x,currFrameKpt[i].y), 5, cv::Scalar(0,255,0), -1);
+                    cv::circle(currColr1, cv::Point2i(lastFrameKpt[i].x,lastFrameKpt[i].y), 5, cv::Scalar(255,0,0), -1);
+                    cv::circle(currColr1, cv::Point2i(newPts.y, newPts.x), 5, cv::Scalar(0,0,255), -1);
+
+                    // cv::imwrite("curr_frame" + std::to_string(currentFrame->frameID) + std::to_string(i) + ".png", currColr1);
+                    // cv::imwrite("prevFrame" + std::to_string(currentFrame->frameID) + std::to_string(i) + ".png", currColr2);
+                    goodFeatures++;
+            }      
         }
     }
     cv::Mat copyImg;
-    cv::add(currImgcopy, mask, copyImg);
-    cv::imwrite("optical" + std::to_string(currentFrame->frameID) + ".png", copyImg);
+    // cv::add(currColr, mask, copyImg);
+    cv::imwrite("curr_frame" + std::to_string(currentFrame->frameID) + ".png", currColr1);
+    // cv::imwrite("prevFrame" + std::to_string(currentFrame->frameID) + ".png", currColr2);
 
     std::cout << "Amount of good features is: " << goodFeatures << std::endl;
-    std::cout << "Amount of total features is: " << status.size() << std::endl;
+    std::cout << "Amount of total features is: " << flowStatus.size() << std::endl;
 
     return goodFeatures;
 
@@ -365,13 +419,45 @@ void LoopHandler::insertFrameFeatures(Frame::ptr _frame) {
 }
 
 
+void LoopHandler::insertFrameFeaturesOPENCV(Frame::ptr _frame) {
+    cv::Mat mask(_frame->rawImage.size(), CV_8UC1, 255);
+   
+    chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
+    std::vector<cv::KeyPoint> keypoints;
+    gftt_->detect(_frame->rawImage, keypoints, mask);
+    chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    chrono::duration<double> timeUsed1 = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    cout << "Feat extraction cost time: " << timeUsed1.count() << " seconds." << endl;
+    int cnt_detected = 0;
+    std::vector<cv::Point> vec;
+    for (auto &kp : keypoints) {
+        
+        vec.push_back(cv::Point(kp.pt.x, kp.pt.y));
+    }
+    chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
+    brief.computeBrief(vec, *_frame);
+    chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
+    chrono::duration<double> timeUsed2 = chrono::duration_cast<chrono::duration<double>>(t4 - t3);
+    cout << "Descriptor generation cost time: " << timeUsed2.count() << " seconds." << endl;
+
+}
+
+
+
+
+
+
 void LoopHandler::runVO() {
     
 
     while(1) {
         if (takeVOStep() == false) {
             break;
-        }        
+        }
+        // std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+        // std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(5));
+
     }
 
 
@@ -379,10 +465,30 @@ void LoopHandler::runVO() {
 
 bool LoopHandler::buildInitMap() {
 
-    std::vector<Matches> matches = brief.matchFeatures(*currentFrame, *lastFrame);
+    std::vector<Matches> matches = brief.matchFeatures(*lastFrame, *currentFrame);
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
+
+
+    Image testObj1(lastFrame->rawImage);
+    Image testObj2(currentFrame->rawImage);
+
+ // std::cout << filterMatches.size() << std::endl;
+    cv::Mat testImage1, testImage2;
+
+    lastFrame->rawImage.copyTo(testImage1);
+    currentFrame->rawImage.copyTo(testImage2);
+
+    cv::Mat sideBySide = brief.drawMatches(testObj1, testObj2, filterMatches);
+
+    // cv::imwrite("image1.png", testImage1);
+    // cv::imwrite("image2.png", testImage2);
+
+
+    cv::imwrite("testSideBySide.png", sideBySide);
+
+
     // adding as features only those points that have been matched and filtered out
     for (auto &eachMatch : filterMatches) {
         Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
@@ -390,13 +496,29 @@ bool LoopHandler::buildInitMap() {
         Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
         currentFrame->features.push_back(feat2);
     }
+    std::cout << "Matched points: " << filterMatches.size() << std::endl;
     cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
-    handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
+    handler3D.getFRANSAC(filterMatches, F, 400, 0.1);    
     // Essential matrix from fundamental matrix
+
+    double focal = 718.8560;
+    cv::Point2d pp(607.1928, 185.2157);
+
+    // cv::Mat E, mask;
+    // std::vector<cv::Point2f> prevFeatures, currFeatures;
+
+    // for (auto& eachPt : filterMatches) {
+    //     prevFeatures.push_back(cv::Point2f(eachPt.pt1.x,eachPt.pt1.y ));
+    //     currFeatures.push_back(cv::Point2f(eachPt.pt2.x,eachPt.pt2.y ));
+    // }
+
+  	// E = cv::findEssentialMat(currFeatures, prevFeatures, focal, pp, cv::RANSAC, 0.999, 1.0, mask);
+
+
     cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
     // Get the pose of the second camera
     // Pose p = handler3D.disambiguateRT(E, filterMatches);
-
+    // E = E.inv();
     cv::Mat R; cv::Mat t;
     CV2DPoints lastFramePts;
     CV2DPoints currFramePts;
@@ -420,8 +542,16 @@ bool LoopHandler::buildInitMap() {
 
     tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
 
-    Sophus::SE3d currPose(REigen, tEigen);
-    currentFrame->setPose(currPose);
+    if (t.at<double>(2,0) < 0) {
+        std::cout << "Failed to initialize" << std::endl;
+    std::cout << "INITIAL T: " <<  tEigen << std::endl;
+
+        return false;
+    }
+    std::cout << "INITIAL T: " <<  tEigen << std::endl;
+
+    Sophus::SE3d currPose(REigen,tEigen);
+    currentFrame->setPose(currPose.inverse());
 
     // insert current and last frame into the map
     map->insertKeyFrame(lastFrame);
@@ -429,7 +559,7 @@ bool LoopHandler::buildInitMap() {
 
     //triangulate based on the last and currentFrame
     CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
-
+    std::cout <<  "Triangulated ponts: " <<  new3dPoints.size() << std::endl;
     // Points used in 3d triangulation = same as the ones matched after outlier removal
 
 
@@ -448,7 +578,7 @@ bool LoopHandler::buildInitMap() {
         map->insertMapPoint(newPt);
     }
 
-
+    // REMEMBER RELATIVE IN ORIGINAL IS SET TO INVERSE!*************************
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
 
 
@@ -495,9 +625,10 @@ int LoopHandler::optimizePoseOnly() {
             features.push_back(eachKp);
             Eigen::Vector3d point3d;
             Eigen::Vector2d point2d;
+            // are the map points w.r.t to second or first frame
             Vec3 pos = mp->getPos();
             
-            point3d << pos.coeff(0), pos.coeff(1), pos.coeff(2);
+            point3d << pos[0] , pos[1], pos[2];
             // std::cout << "3d points " << pos.coeff(0) << " " << pos.coeff(1)  << " " << pos.coeff(2)  << std::endl;
             point2d << eachKp->kp.x, eachKp->kp.y;
             // std::cout << "2d points " << eachKp->kp.x  << " " << eachKp->kp.y << " " << std::endl;
@@ -546,8 +677,10 @@ int LoopHandler::optimizePoseOnly() {
         }
     }
     std::cout << "outlier removal done!" << std::endl;
-
     currentFrame->setPose(vertexPose->estimate());
+
+    // Sophus::SE3d correctedPose(vertexPose->estimate().rotationMatrix(), vertexPose->estimate().translation());
+    // currentFrame->setPose(correctedPose);
 
     std::cout << "Outlier/Inlier count" << outlierCount << "/" << features.size()-outlierCount << std::endl;
 
@@ -555,7 +688,7 @@ int LoopHandler::optimizePoseOnly() {
 
     for (auto &eachFeat : features) {
         if (eachFeat->isOutlier) {
-            eachFeat->mapPoint.reset();
+            // eachFeat->mapPoint.reset();
             eachFeat->isOutlier = false;
         }
     }
@@ -593,7 +726,9 @@ CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFr
     CV3DPoints pts3D;
     for (int i = 0; i < pnts3D.cols; i++) {
         cv::Point3d pt3d(pnts3D.at<double>(0, i)/pnts3D.at<double>(3, i), pnts3D.at<double>(1, i)/pnts3D.at<double>(3, i), pnts3D.at<double>(2, i)/pnts3D.at<double>(3, i));
-        pts3D.push_back(pt3d);
+        if (pt3d.z > 0) {
+            pts3D.push_back(pt3d);
+        }
     }
 
     return pts3D;

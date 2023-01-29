@@ -40,6 +40,7 @@ class LoopHandler {
     public:
         LoopHandler();
         void setViewer();
+        void insertFrameFeaturesOPENCV(Frame::ptr _frame);
         LoopHandler(const std::string &config);
         Map::ptr map = nullptr;
         Viewer::ptr viz = nullptr;
@@ -81,6 +82,7 @@ class LoopHandler {
         bool stereoStatus();
         std::string getLeftImagesPath();
         int getLeftTrainLength();
+        cv::Ptr<cv::ORB> gftt_;  // feature detector in opencv
 
         ~LoopHandler();
 };

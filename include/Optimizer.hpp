@@ -68,15 +68,46 @@ class EdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose>
         virtual void computeError() override {
             const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
             Sophus::SE3d T = v->estimate();
+            
+            
+            // std::cout << "K inside optim: " << _K << std::endl;
+            // std::cout << "T inside optim: " << T.matrix() << std::endl;
             Eigen::Vector3d pos_pixel = _K * (T * _pos3d);
+            
+            
+            
+            
+            
+            
+            // Eigen::Matrix<double, 4, 1> homo3DPt;
+           
+            // Eigen::Matrix3d KEigen;
+           
+            // homo3DPt << _pos3d.coeff(0), _pos3d.coeff(1), _pos3d.coeff(2), 1;
+            // Vec3 camPoints = _K*T.matrix3x4()*homo3DPt;
+
+            // std::cout << "POSSS PIXELLL point" <<  pos_pixel/pos_pixel[2]<< std::endl;
+            // std::cout << "OUR TRANSFORMATION point" <<  camPoints/camPoints[2] << std::endl;
+
+            // camPoints /= camPoints[2]; 
             pos_pixel /= pos_pixel[2];
+            // pos_pixel[0] = -pos_pixel[0];
+            // std::cout << "optimization pixel values:\n" << pos_pixel << std::endl; 
+            // std::cout << "measurement pixel values:\n" << _measurement << std::endl; 
+            // Eigen::Vector3d pos_pixel;
+            // pos_pixel[0] = camPoints[0];
+            // pos_pixel[1] = camPoints[1];
+            // pos_pixel[2] = 1;
             _error = _measurement - pos_pixel.head<2>();
+
         }
         // The Jacobian calculation function: linearizeOplus. 
         //In this function, we calcu- late the Jacobian of each edge relative to the vertex.
         virtual void linearizeOplus() override {
             const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
             Sophus::SE3d T = v->estimate();
+
+            
             Eigen::Vector3d pos_cam = T * _pos3d;
             double fx = _K(0, 0);
             double fy = _K(1, 1);

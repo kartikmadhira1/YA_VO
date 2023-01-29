@@ -21,8 +21,8 @@ Vec3 Frame::world2Camera(const Vec3 &mp3D, const Sophus::SE3d &pose_, const cv::
     // std::cout << "Vec3d point" <<  homo3DPt << std::endl;
     Eigen::Matrix3d KEigen;
     KEigen <<K.at<double>(0, 0), K.at<double>(0, 1),  K.at<double>(0, 2),
-                                K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
-                                K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
+            K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
+            K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
     Vec3 camPoints = KEigen*pose_.matrix3x4()*homo3DPt;
     return camPoints;
 }

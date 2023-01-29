@@ -21,7 +21,7 @@ class MapPoint {
         }
         void addObservation(std::shared_ptr<Feature> feature);
         static MapPoint::ptr createMapPoint();
-        void setPos(const Vec3 &pos);
+        void setPos(const Vec3 pos);
         void setPos(const cv::Point3d pt);
         Vec3 getPos();
 

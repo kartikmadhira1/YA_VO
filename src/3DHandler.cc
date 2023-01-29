@@ -189,7 +189,7 @@ bool _3DHandler::getFRANSAC(std::vector<Matches> matches, cv::Mat &F, int iterat
             newF.copyTo(F);
         }
     }
-
+    std::cout << "F ransac max inlier count /300: " << maxInliers;
     return true;
 }
 
