@@ -45,27 +45,27 @@ void Optimizer::partialBA(const vector<cv::Point3d> &points3D, const vector<cv::
     convertToEigen(points3D, points2D, points2Deigen, points3Deigen);
 
 
-    // Add 3D points and edges
-    int index = 1;
-    for (size_t i = 0; i < points2Deigen.size(); ++i) {
-        auto p2d = points2Deigen[i];
-        auto p3d = points3Deigen[i];
-        EdgeProjection *edge = new EdgeProjection(p3d, KEigen);
-        edge->setId(index);
-        edge->setVertex(0, vertexPose);
-        edge->setMeasurement(p2d);
-        edge->setInformation(Eigen::Matrix2d::Identity());
-        optimizer.addEdge(edge);
-        index++;
-    }
+    // // Add 3D points and edges
+    // int index = 1;
+    // for (size_t i = 0; i < points2Deigen.size(); ++i) {
+    //     auto p2d = points2Deigen[i];
+    //     auto p3d = points3Deigen[i];
+    //     EdgeProjection *edge = new EdgeProjection(p3d, KEigen);
+    //     edge->setId(index);
+    //     edge->setVertex(0, vertexPose);
+    //     edge->setMeasurement(p2d);
+    //     edge->setInformation(Eigen::Matrix2d::Identity());
+    //     optimizer.addEdge(edge);
+    //     index++;
+    // }
 
-    chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-    optimizer.setVerbose(true);
-    optimizer.initializeOptimization();
-    optimizer.optimize(10);
-    chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-    chrono::duration<double> timeUsed = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-    cout << "optimization costs time: " << timeUsed.count() << " seconds." << endl;
-    cout << "pose estimated by g2o =\n" << vertexPose->estimate().matrix() << endl;
-    pose = vertexPose->estimate();
+    // chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+    // optimizer.setVerbose(true);
+    // optimizer.initializeOptimization();
+    // optimizer.optimize(10);
+    // chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    // chrono::duration<double> timeUsed = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    // cout << "optimization costs time: " << timeUsed.count() << " seconds." << endl;
+    // cout << "pose estimated by g2o =\n" << vertexPose->estimate().matrix() << endl;
+    // pose = vertexPose->estimate();
 }

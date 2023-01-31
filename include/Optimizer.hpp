@@ -61,17 +61,17 @@ public:
   virtual bool write(ostream &out) const override {}
 };
 
-class EdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose> {
+class EdgeProjectionPoseOnly : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose> {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;       
-        EdgeProjection(const Eigen::Vector3d &pos, const Eigen::Matrix3d &K) : _pos3d(pos), _K(K) {}
+        EdgeProjectionPoseOnly(const Eigen::Vector3d &pos, const Eigen::Matrix3d &K) : _pos3d(pos), _K(K) {}
         virtual void computeError() override {
             const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
             Sophus::SE3d T = v->estimate();
             
             
             // std::cout << "K inside optim: " << _K << std::endl;
-            // std::cout << "T inside optim: " << T.matrix() << std::endl;
+            // std::cout << "T iznside optim: " << T.matrix() << std::endl;
             Eigen::Vector3d pos_pixel = _K * (T * _pos3d);
             
             
@@ -84,9 +84,11 @@ class EdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose>
             // Eigen::Matrix3d KEigen;
            
             // homo3DPt << _pos3d.coeff(0), _pos3d.coeff(1), _pos3d.coeff(2), 1;
-            // Vec3 camPoints = _K*T.matrix3x4()*homo3DPt;
+            // // Vec3 camPoints = _K*T.matrix3x4()*homo3DPt;
 
-            // std::cout << "POSSS PIXELLL point" <<  pos_pixel/pos_pixel[2]<< std::endl;
+            // std::cout << "POSSS PIXELLL point" <<  pos_pixel.head<2>()<< std::endl;
+            // std::cout << "Measurement point" <<  _measurement << std::endl;
+
             // std::cout << "OUR TRANSFORMATION point" <<  camPoints/camPoints[2] << std::endl;
 
             // camPoints /= camPoints[2]; 

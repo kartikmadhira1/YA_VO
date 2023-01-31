@@ -73,13 +73,15 @@ class LoopHandler {
         // triangulate points
         CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
                             const std::vector<Matches> filtMatches);
-
+        
+        bool triangulation(const std::vector<Sophus::SE3d> &poses,
+                   const std::vector<Vec3> points, Vec3 &pt_world);
         // reinit
         bool reinitialize();
-
         cv::Mat sophus2ProjMat( Frame::ptr _frame);
         std::string getSeqNo();
         bool stereoStatus();
+        Vec3 pixel2camera(const cv::Point p, const cv::Mat K);
         std::string getLeftImagesPath();
         int getLeftTrainLength();
         cv::Ptr<cv::ORB> gftt_;  // feature detector in opencv
