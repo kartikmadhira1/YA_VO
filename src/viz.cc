@@ -59,18 +59,18 @@ void Viewer::plotterLoop() {
             drawFrame(currentFrame, green);
             followCurrentFrame(visCamera);
 
-            // cv::Mat img = plotFromImage();
-            // cv::imshow("image", img);
-            // cv::waitKey(1);
+            cv::Mat img = plotFromImage();
+            cv::imshow("image", img);
+            cv::waitKey(1);
         }
         const float red[3] = {1.0, 0, 0};
         for (auto &eachFrame : frames) {
             drawFrame(eachFrame.second, red);
         }
 
-        if (map) {
-            drawMPs();
-        }
+        // if (map) {
+        //     drawMPs();
+        // }
 
         pangolin::FinishFrame();
         usleep(500);

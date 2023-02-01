@@ -24,7 +24,7 @@ LoopHandler::LoopHandler(const std::string &config) : brief (256), fd(12, 50)  {
     }
     generatePathTrain();
     _trainIterator = leftPathTrain.begin();
-    gftt_ = cv::ORB::create(4000);
+    gftt_ = cv::ORB::create(600);
 
     map = Map::createMap();
     viz = std::make_shared<Viewer>();
@@ -99,6 +99,7 @@ void LoopHandler::addFrame(Frame::ptr _frame) {
         // bool reinitSuccess = reinitialize();
         if (!trackSuccess) {
             bool reinitSuccess = reinitialize();
+            map->insertKeyFrame(currentFrame);
             if(viz) {
                 viz->addCurrentFrame(currentFrame);
                 viz->updateMap();
@@ -145,9 +146,9 @@ bool LoopHandler::track() {
     }
     int optimizedInliers = optimizePoseOnly();
 
-    map->insertKeyFrame(currentFrame);
+    // map->insertKeyFrame(currentFrame);
     
-    if (optimizedInliers < 400) {
+    if (optimizedInliers < 100) {
         std::cout << "tracking failed" << std::endl;
         return false;
     }
@@ -168,89 +169,126 @@ bool LoopHandler::reinitialize() {
 
     
    
-    //Filter out the 3d points that were reset in the last frame
-    int resetPoints = 0;
-    for (int i=0;i<lastFrame->features.size();i++) {
-        if (auto mp = lastFrame->features[i]->mapPoint.lock()) {
-            // add these features to reset features
-            if (!mp) {
+    // //Filter out the 3d points that were reset in the last frame
+    // int resetPoints = 0;
+    // std::vector<cv::Point> resetKeypoints;
+    // for (int i=0;i<lastFrame->features.size();i++) {
+    //     // if (lastFrame->features[i]->mapPoint.expired()) {
+    //         // add these features to reset features
+    //          resetKeypoints.push_back(cv::Point(lastFrame->features[i]->kp.x, lastFrame->features[i]->kp.y));
+    //     // }
+    // }
+    // // put a mock image 
+    // Image mockImage(lastFrame->rawImage);
 
-                lastFrame->resetKeypoints.push_back(KeyPoint(lastFrame->features[i]->kp.x, lastFrame->features[i]->kp.y, i));
-            }  
-        }
-    }
+    // brief.computeBrief(resetKeypoints, mockImage);
+
+    // reset current frame features
+    currentFrame->features.clear();
+
     std::vector<Matches> matches = brief.matchFeatures(*lastFrame, *currentFrame);
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
 
-   
+
+
+    Image testObj1(lastFrame->rawImage);
+    Image testObj2(currentFrame->rawImage);
+
+ // std::cout << filterMatches.size() << std::endl;
+    cv::Mat testImage1, testImage2;
+
+    lastFrame->rawImage.copyTo(testImage1);
+    currentFrame->rawImage.copyTo(testImage2);
+
+    cv::Mat sideBySide = brief.drawMatches(testObj1, testObj2, filterMatches);
+
+    // cv::imwrite("image1.png", testImage1);
+    // cv::imwrite("image2.png", testImage2);
+
+
+    // cv::imwrite("testSideBySideRESET.png", sideBySide);
+
+
+
     // // // adding as features only those points that have been matched and filtered out
-    for (auto &eachMatch : filterMatches) {
-        // Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
-        // lastFrame->features.push_back(feat1);
-        Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
-        currentFrame->features.push_back(feat2);
-    }
-    std::cout << "Number of matches after resetting: " << filterMatches.size() << std::endl;
-    auto ret = triangulate2View(lastFrame, currentFrame, filterMatches, false);
-    // cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
-    // handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
-    // // Essential matrix from fundamental matrix
-    // cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
-    // // Get the pose of the second camera
-    // // Pose p = handler3D.disambiguateRT(E, filterMatches);
+    // for (auto &eachMatch : filterMatches) {
+    //     // Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
+    //     // lastFrame->features.push_back(feat1);
+    //     Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
+    //     currentFrame->features.push_back(feat2);
+    // }
 
-    // cv::Mat R; cv::Mat t;
-    // CV2DPoints lastFramePts;
-    // CV2DPoints currFramePts;
+    std::cout << "Matched points: " << filterMatches.size() << std::endl;
+    cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
+    handler3D.getFRANSAC(filterMatches, F, 400, 0.1);    
+    // Essential matrix from fundamental matrix
+
+    double focal = 718.8560;
+    cv::Point2d pp(607.1928, 185.2157);
+
+    cv::Mat E, mask;
+    std::vector<cv::Point2f> prevFeatures, currFeatures;
+
+    for (auto& eachPt : filterMatches) {
+        prevFeatures.push_back(cv::Point2f(eachPt.pt1.x,eachPt.pt1.y ));
+        currFeatures.push_back(cv::Point2f(eachPt.pt2.x,eachPt.pt2.y ));
+    }
+
+  	E = cv::findEssentialMat(currFeatures, prevFeatures, focal, pp, cv::RANSAC, 0.999, 1.0, mask);
+
+// 
+    // cv::Mat E = handler3D.intrinsics.Left.getK().t() * F * handler3D.intrinsics.Left.getK();
+    // Get the pose of the second camera
+    // Pose p = handler3D.disambiguateRT(E, filterMatches);
+    // E = E.inv();
+    cv::Mat R; cv::Mat t;
+    CV2DPoints lastFramePts;
+    CV2DPoints currFramePts;
    
 
-    // for (int i = 0; i < filterMatches.size(); i++) {
-    //     lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
-    //     currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
-    // }
+    for (int i = 0; i < filterMatches.size(); i++) {
+        lastFramePts.push_back(cv::Point(filterMatches[i].pt1.x, filterMatches[i].pt1.y));
+        currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
+    }
 
-    // cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
-
-
-    // Eigen::Matrix<double, 3, 3> REigen ;
-
-    // REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
-    // R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
-    // R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
-
-    // Eigen::Matrix<double, 3, 1>  tEigen ;
-
-    // tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
+    cv::recoverPose(E, currFramePts, lastFramePts, handler3D.intrinsics.Left.getK(), R, t);
 
 
+    Eigen::Matrix<double, 3, 3> REigen ;
 
-    // Sophus::SE3d currPose(REigen, tEigen);
+    REigen <<   R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), 
+    R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), 
+    R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
 
-    // // this is contentious, if its reset what transformation matrices do you use?
+    Eigen::Matrix<double, 3, 1>  tEigen ;
 
-    // currPose = currPose * lastFrame->pose;
-    // currentFrame->setPose(currPose);
+    tEigen << t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0);
 
-    
-
-    // insert current and last frame into the map
-    // map->insertKeyFrame(lastFrame);
-
-    //triangulate based on the last and currentFrame
-    // CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches, true);
-
-    // // Points used in 3d triangulation = same as the ones matched after outlier removal
-    // std::cout << new3dPoints.size() << "<---- number of points triangulated!" << std::endl;
-    // if (new3dPoints.size() < 5) {
+    // if (t.at<double>(2,0) < 0) {
+    //     std::cout << "Failed to initialize" << std::endl;
+    //     std::cout << "INITIAL T: " <<  tEigen << std::endl;
     //     return false;
+        
     // }
-    // now empty the active L and F frames
-    // map->resetActive();
+    std::cout << "NEW T: " <<  tEigen << std::endl;
 
-    
+    Sophus::SE3d currPose(REigen,tEigen);
+    currPose = currPose.inverse();
+    currentFrame->setPose(currPose*lastFrame->pose);
 
+
+    std::cout << "Number of matches after resetting: " << filterMatches.size() << std::endl;
+    // print current frame ID
+    std::cout << "Current frame ID: RESETTT " << currentFrame->frameID << std::endl;
+    std::cout << "Current frame features size " << currentFrame->features.size() << std::endl;
+
+
+    auto ret = triangulate2View(lastFrame, currentFrame, filterMatches, false);
+    std::cout << "Current frame features size after triangulation " << currentFrame->features.size() << std::endl;
+
+   
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
 
     return true;
@@ -283,6 +321,9 @@ int LoopHandler::trackLastFrame() {
     std::vector<int> lastFramePointsIndex;
     std::vector<cv::Point3d> pointsInFirst;
     std::vector<cv::Point3d> pointsInSecond;
+    std::cout << "Last frame id: " << lastFrame->frameID << std::endl;
+    std::cout << "Last features size " << lastFrame->features.size() << std::endl;
+
     for (int i = 0;i< lastFrame->features.size();i++) {
         // convert the weak ptr to shared with lock 
         if (auto mapPtr = lastFrame->features[i]->mapPoint.lock() ) {
@@ -397,7 +438,7 @@ int LoopHandler::trackLastFrame() {
 
     cv::Mat copyImg;
     // cv::add(currColr, mask, copyImg);
-    cv::imwrite("curr_frame" + std::to_string(currentFrame->frameID) + ".png", currColr1);
+    // cv::imwrite("curr_frame" + std::to_string(currentFrame->frameID) + ".png", currColr1);
     // cv::imwrite("prevFrame" + std::to_string(currentFrame->frameID) + ".png", currColr2);
 
     std::cout << "Amount of good features is: " << goodFeatures << std::endl;
@@ -414,7 +455,7 @@ bool LoopHandler::takeVOStep() {
     Frame::ptr frame = getNextFrame();
     if (frame != nullptr) {
         // Get features
-        insertFrameFeatures(frame);
+        insertFrameFeaturesOPENCV(frame);
         // Add frame to pipeline
         addFrame(frame);
         return true;
@@ -450,7 +491,7 @@ void LoopHandler::insertFrameFeaturesOPENCV(Frame::ptr _frame) {
     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
     std::vector<cv::KeyPoint> keypoints;
-    gftt_->detect(_frame->rawImage, keypoints, mask);
+    gftt_->detect(_frame->rawImage, keypoints);
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     chrono::duration<double> timeUsed1 = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
     cout << "Feat extraction cost time: " << timeUsed1.count() << " seconds." << endl;
@@ -458,7 +499,7 @@ void LoopHandler::insertFrameFeaturesOPENCV(Frame::ptr _frame) {
     std::vector<cv::Point> vec;
     for (auto &kp : keypoints) {
         
-        vec.push_back(cv::Point(kp.pt.x, kp.pt.y));
+        vec.push_back(cv::Point(kp.pt.y, kp.pt.x));
     }
     chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
     brief.computeBrief(vec, *_frame);
@@ -481,7 +522,7 @@ void LoopHandler::runVO() {
             break;
         }
         // std::this_thread::sleep_for(std::chrono::nanoseconds(10));
-        // std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(5));
+        // std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(2));
 
     }
 
@@ -511,7 +552,7 @@ bool LoopHandler::buildInitMap() {
     // cv::imwrite("image2.png", testImage2);
 
 
-    cv::imwrite("testSideBySide.png", sideBySide);
+    // cv::imwrite("testSideBySide.png", sideBySide);
 
 
     // adding as features only those points that have been matched and filtered out
@@ -554,7 +595,7 @@ bool LoopHandler::buildInitMap() {
         currFramePts.push_back(cv::Point(filterMatches[i].pt2.x, filterMatches[i].pt2.y));
     }
 
-    cv::recoverPose(E, lastFramePts, currFramePts, handler3D.intrinsics.Left.getK(), R, t);
+    cv::recoverPose(E, currFramePts,lastFramePts,  handler3D.intrinsics.Left.getK(), R, t);
 
 
     Eigen::Matrix<double, 3, 3> REigen ;
@@ -575,7 +616,7 @@ bool LoopHandler::buildInitMap() {
     // }
     std::cout << "INITIAL T: " <<  tEigen << std::endl;
 
-    Sophus::SE3d currPose(REigen,-tEigen);
+    Sophus::SE3d currPose(REigen,tEigen);
     currentFrame->setPose(currPose.inverse());
 
     // insert current and last frame into the map
@@ -646,10 +687,13 @@ CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFr
                 landMarks++;
             } else {
                 // std::cout << landMarks << " " << pworld << std::endl;
-                pworld = currFrame->pose.inverse() * pworld;
+                Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(filtMatches[i].pt2.x, filtMatches[i].pt2.y));
+                feat2->mapPoint = newMapPoint;
+
+                currentFrame->features.push_back(feat2);
+                // pworld = lastFrame->pose* pworld;
                 newMapPoint->setPos(pworld);
-                newMapPoint->addObservation(currFrame->features[i]);
-                currentFrame->features[i]->mapPoint = newMapPoint;
+                newMapPoint->addObservation(feat2);
                 map->insertMapPoint(newMapPoint);
                 landMarks++;
             }
@@ -728,7 +772,7 @@ int LoopHandler::optimizePoseOnly() {
     std::cout << "current frame size in OPTI^^^^^^^" << currentFrame->features.size() << std::endl;
     std::cout << "OPTI 2NS s^^^^^^^" << currentFrame->features[2]->mapPoint.lock()->getPos() << std::endl;
 
-    for (auto eachKp:currentFrame->features) {
+    for (auto &eachKp:currentFrame->features) {
         if (auto mp = eachKp->mapPoint.lock()) {
 
             features.push_back(eachKp);
@@ -760,7 +804,7 @@ int LoopHandler::optimizePoseOnly() {
         }
     }
 
-    cv::imwrite("opti_frame" + std::to_string(currentFrame->frameID) + ".png", currColr1);
+    // cv::imwrite("opti_frame" + std::to_string(currentFrame->frameID) + ".png", currColr1);
 
     std::cout << "initial optizimation done!" << std::endl;
     // estimate the Pose the determine the outliers
