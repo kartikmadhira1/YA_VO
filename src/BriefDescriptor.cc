@@ -162,6 +162,9 @@ int Brief::popCount(uchar featVec) {
 
 std::vector<Matches> Brief::matchFeatures( Image &img1,  Image &img2) {
     std::vector<Matches> matches;
+    if (img1.resetKeypoints.size() != 0) {
+        img1.keypoints = img1.resetKeypoints;
+    }
     for (int i=0; i<img1.keypoints.size(); i++) {
         int minDist = INT_MAX;
         KeyPoint kp2(0,0,0);

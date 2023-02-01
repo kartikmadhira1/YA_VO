@@ -18,6 +18,8 @@ class Image {
         Image(const cv::Mat &img);
         cv::Mat rawImage;
         std::vector<KeyPoint> keypoints;
+        std::vector<KeyPoint> resetKeypoints;
+
         int getW() const;
         int getH() const;
         void unDistort();

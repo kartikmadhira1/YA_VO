@@ -147,7 +147,7 @@ bool LoopHandler::track() {
 
     map->insertKeyFrame(currentFrame);
     
-    if (optimizedInliers < 40) {
+    if (optimizedInliers < 400) {
         std::cout << "tracking failed" << std::endl;
         return false;
     }
@@ -166,17 +166,34 @@ bool LoopHandler::track() {
 
 bool LoopHandler::reinitialize() {
 
+    
+   
+    //Filter out the 3d points that were reset in the last frame
+    int resetPoints = 0;
+    for (int i=0;i<lastFrame->features.size();i++) {
+        if (auto mp = lastFrame->features[i]->mapPoint.lock()) {
+            // add these features to reset features
+            if (!mp) {
+
+                lastFrame->resetKeypoints.push_back(KeyPoint(lastFrame->features[i]->kp.x, lastFrame->features[i]->kp.y, i));
+            }  
+        }
+    }
     std::vector<Matches> matches = brief.matchFeatures(*lastFrame, *currentFrame);
     std::vector<Matches> filterMatches;
 
     brief.removeOutliers(matches, filterMatches, 20.0);
-    // // adding as features only those points that have been matched and filtered out
+
+   
+    // // // adding as features only those points that have been matched and filtered out
     for (auto &eachMatch : filterMatches) {
-        Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
-        lastFrame->features.push_back(feat1);
+        // Feature::ptr feat1 = std::make_shared<Feature>(lastFrame, cv::Point2d(eachMatch.pt1.x, eachMatch.pt1.y));
+        // lastFrame->features.push_back(feat1);
         Feature::ptr feat2 = std::make_shared<Feature>(currentFrame, cv::Point2d(eachMatch.pt2.x, eachMatch.pt2.y));
         currentFrame->features.push_back(feat2);
     }
+    std::cout << "Number of matches after resetting: " << filterMatches.size() << std::endl;
+    auto ret = triangulate2View(lastFrame, currentFrame, filterMatches, false);
     // cv::Mat F = cv::Mat::zeros(3, 3, CV_64F);
     // handler3D.getFRANSAC(filterMatches, F, 200, 0.1);    
     // // Essential matrix from fundamental matrix
@@ -222,34 +239,17 @@ bool LoopHandler::reinitialize() {
     // map->insertKeyFrame(lastFrame);
 
     //triangulate based on the last and currentFrame
-    CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
+    // CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches, true);
 
-    // Points used in 3d triangulation = same as the ones matched after outlier removal
-    std::cout << new3dPoints.size() << "<---- number of points triangulated!" << std::endl;
-    if (new3dPoints.size() < 5) {
-        return false;
-    }
+    // // Points used in 3d triangulation = same as the ones matched after outlier removal
+    // std::cout << new3dPoints.size() << "<---- number of points triangulated!" << std::endl;
+    // if (new3dPoints.size() < 5) {
+    //     return false;
+    // }
     // now empty the active L and F frames
-    map->resetActive();
+    // map->resetActive();
 
-    // Here the 3d points MUST be w.r.t to the initial position!!!!!!
-    for (int i=0;i<new3dPoints.size();i++) {
-        if (new3dPoints[i].z > 0) {
-            MapPoint::ptr newPt = MapPoint::createMapPoint();
-            // std::cout << new3dPoints[i].x << " " << new3dPoints[i].y << " " << new3dPoints[i].z << std::endl;
-            Vec3  pos(new3dPoints[i].x , new3dPoints[i].y, new3dPoints[i].z);
-            pos = currentFrame->pose.inverse()*pos;
-            // std::cout << pos.coeff(0)  << " " << pos.coeff(1) << pos.coeff(2) << std::endl;
-            newPt->setPos(pos);
-            // add features that map to the 3d point
-            newPt->addObservation(lastFrame->features[i]);
-            newPt->addObservation(currentFrame->features[i]);
-            // insert 3d points that are part of the features in frame
-            lastFrame->features[i]->mapPoint = newPt;
-            currentFrame->features[i]->mapPoint = newPt;
-            map->insertMapPoint(newPt);
-        }
-    }
+    
 
     relativeMotion = currentFrame->pose * lastFrame->pose.inverse();
 
@@ -575,15 +575,15 @@ bool LoopHandler::buildInitMap() {
     // }
     std::cout << "INITIAL T: " <<  tEigen << std::endl;
 
-    Sophus::SE3d currPose(REigen,tEigen);
-    currentFrame->setPose(currPose);
+    Sophus::SE3d currPose(REigen,-tEigen);
+    currentFrame->setPose(currPose.inverse());
 
     // insert current and last frame into the map
     map->insertKeyFrame(lastFrame);
     map->insertKeyFrame(currentFrame);
 
     //triangulate based on the last and currentFrame
-    CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches);
+    CV3DPoints new3dPoints = triangulate2View(lastFrame, currentFrame, filterMatches, true);
     // std::cout <<  "Triangulated ponts: " <<  new3dPoints.size() << std::endl;
     // // Points used in 3d triangulation = same as the ones matched after outlier removal
 
@@ -615,7 +615,7 @@ bool LoopHandler::buildInitMap() {
 
 
 CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
-                                                    const std::vector<Matches> filtMatches) {
+                                                    const std::vector<Matches> filtMatches, bool firstView) {
     
     CV2DPoints lastFramePts;
     CV2DPoints currFramePts;
@@ -633,20 +633,32 @@ CV3DPoints LoopHandler::triangulate2View(Frame::ptr lastFrame, Frame::ptr currFr
             pixel2camera(cv::Point(filtMatches[i].pt2.x, filtMatches[i].pt2.y), handler3D.intrinsics.Left.getK())};
         Vec3 pworld = Vec3::Zero();
         if (triangulation(poses, points, pworld) && pworld[2] > 0) {
-            
             auto newMapPoint = MapPoint::createMapPoint();
-            newMapPoint->setPos(pworld);
-            newMapPoint->addObservation(lastFrame->features[i]);
-            newMapPoint->addObservation(currFrame->features[i]);
+            if (firstView) {
+                // pworld = currFrame->pose.inverse() * pworld;
+                newMapPoint->setPos(pworld);
+                newMapPoint->addObservation(currFrame->features[i]);
+                newMapPoint->addObservation(lastFrame->features[i]);
+                currentFrame->features[i]->mapPoint = newMapPoint;
+                lastFrame->features[i]->mapPoint = newMapPoint;
+                map->insertMapPoint(newMapPoint);
              // insert 3d points that are part of the features in frame
-            lastFrame->features[i]->mapPoint = newMapPoint;
-            currentFrame->features[i]->mapPoint = newMapPoint;
-            map->insertMapPoint(newMapPoint);
-            landMarks++;
+                landMarks++;
+            } else {
+                // std::cout << landMarks << " " << pworld << std::endl;
+                pworld = currFrame->pose.inverse() * pworld;
+                newMapPoint->setPos(pworld);
+                newMapPoint->addObservation(currFrame->features[i]);
+                currentFrame->features[i]->mapPoint = newMapPoint;
+                map->insertMapPoint(newMapPoint);
+                landMarks++;
+            }
+            
+            
         }
 
     }
-    std::cout << "Landmarks: " << landMarks << std::endl;
+    std::cout << "New Landmarks: " << landMarks << std::endl;
 
     // // Placeholder for triangulated points
     // cv::Mat pnts3D(4, lastFramePts.size(), CV_64F);
@@ -793,7 +805,7 @@ int LoopHandler::optimizePoseOnly() {
 
     for (auto &eachFeat : features) {
         if (eachFeat->isOutlier) {
-            // eachFeat->mapPoint.reset();
+            eachFeat->mapPoint.reset();
             eachFeat->isOutlier = false;
         }
     }

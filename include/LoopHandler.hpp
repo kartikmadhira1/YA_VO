@@ -72,7 +72,7 @@ class LoopHandler {
         int optimizePoseOnly();
         // triangulate points
         CV3DPoints triangulate2View(Frame::ptr lastFrame, Frame::ptr currFrame, 
-                            const std::vector<Matches> filtMatches);
+                            const std::vector<Matches> filtMatches, bool firstView);
         
         bool triangulation(const std::vector<Sophus::SE3d> &poses,
                    const std::vector<Vec3> points, Vec3 &pt_world);
@@ -85,7 +85,6 @@ class LoopHandler {
         std::string getLeftImagesPath();
         int getLeftTrainLength();
         cv::Ptr<cv::ORB> gftt_;  // feature detector in opencv
-
         ~LoopHandler();
 };
 
