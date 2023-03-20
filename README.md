@@ -1,6 +1,6 @@
 # Yet Another - Visual Odometry for fun!
 
-![KITTI Sequence 01 - Initial path](misc/kitti01.png)
+To Do:
 
-
-![KITTI Sequence 01 - 3D points](misc/mapping.png)
+[] Add full Kitti sequences results
+[] Switch to custom functions from OpenCV
