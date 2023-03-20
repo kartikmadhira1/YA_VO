@@ -2,5 +2,5 @@
 
 To Do:
 
-[] Add full Kitti sequences results
-[] Switch to custom functions from OpenCV
+[ ] Add full Kitti sequences results
+[ ] Switch to custom functions from OpenCV
