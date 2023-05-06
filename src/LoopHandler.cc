@@ -455,7 +455,7 @@ bool LoopHandler::takeVOStep() {
     Frame::ptr frame = getNextFrame();
     if (frame != nullptr) {
         // Get features
-        insertFrameFeaturesOPENCV(frame);
+        insertFrameFeatures(frame);
         // Add frame to pipeline
         addFrame(frame);
         return true;

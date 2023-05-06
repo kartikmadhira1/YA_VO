@@ -3,3 +3,8 @@ OPENCV
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON=../opencv -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules -D BUILD_ZLIB=OFF -D WITH_OPENEXR=OFF ..
 BUILD
 cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++ ..
+
+## Debugging steps
+
+1. Make sure that g2o is built and installed into paths using 'sudo make install'
+

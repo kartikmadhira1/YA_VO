@@ -17,10 +17,19 @@ TEST(BriefDescritor, GetSideBySideImageMatches) {
     Image testObj1(testImage1);
     Image testObj2(testImage2);
     FastDetector fd(12, 50);
+    // calculate the time for this operation 
+    auto start = std::chrono::high_resolution_clock::now();
     auto features1 = fd.getFastFeatures(testObj1);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
+    std::cout << "Time taken for FAST feature detection: " << duration.count() << " ms" << std::endl;
     auto features2 = fd.getFastFeatures(testObj2);
     
+    start = std::chrono::high_resolution_clock::now();
     brief.computeBrief(features1, testObj1);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
+    std::cout << "Time taken for BRIEF descriptor computation: " << duration.count() << " ms" << std::endl;
     brief.computeBrief(features2, testObj2);
 
     // std::cout << "Features1 size: " << features1.size() << std::endl;
